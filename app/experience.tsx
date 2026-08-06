@@ -82,7 +82,7 @@ const oasisShape: FeatureCollection<Polygon> = {
 };
 
 function accuracyClass(accuracy: string) {
-  return accuracy === "公开知识点" ? "knowledge" : accuracy === "县域叙事点" ? "county" : "approximate";
+  return accuracy === "公开知识点" ? "knowledge" : accuracy === "县域叙事点" ? "county" : accuracy === "用户提供地图位点" ? "confirmed" : "approximate";
 }
 
 export function Experience() {
@@ -277,7 +277,7 @@ export function Experience() {
             <p className="eyebrow light">A LIVING ATLAS OF MINQIN</p>
             <h2 id="map-title">选择一层，进入民勤。</h2>
           </div>
-          <p>地图将团队实拍与公开知识分层呈现。虚线点位表示县域或村级近似定位，圆环点位表示公开知识节点。</p>
+          <p>地图将团队实拍与公开知识分层呈现。实心定位点表示团队提供的具体地图POI，虚线点位表示县域或村级近似定位，圆环点位表示公开知识节点。</p>
         </div>
 
         <div className="layer-tabs" role="tablist" aria-label="地图图层">

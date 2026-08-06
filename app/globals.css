@@ -131,6 +131,7 @@ img, video { display: block; max-width: 100%; }
 .story-meta span.knowledge { border-style: solid; border-radius: 999px; color: var(--water); }
 .story-meta span.county { color: var(--flag); }
 .story-meta span.approximate { color: #9b7b2f; }
+.story-meta span.confirmed { border-style: solid; border-radius: 999px; color: var(--oasis); }
 .story-meta time { font-size: 10px; color: var(--ink-soft); }
 .story-summary { margin: 0; font-size: 14px; line-height: 1.9; }
 .story-summary-en { margin: 15px 0 27px; color: var(--ink-soft); font-family: Georgia, serif; font-size: 12px; line-height: 1.7; }

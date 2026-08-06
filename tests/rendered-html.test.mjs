@@ -35,6 +35,9 @@ test("ships all curated media and no private contact details", async () => {
   assert.doesNotMatch(`${content}\n${experience}`, /\b1[3-9]\d{9}\b/);
   assert.doesNotMatch(`${content}\n${experience}`, /@(?:163|qq|bucm)\.com/i);
   assert.match(content, /村级近似定位/);
+  assert.match(content, /民勤县种林公益发展中心公益林基地/);
+  assert.match(content, /用户提供地图位点/);
+  assert.match(content, /不作为手机GPS实测坐标/);
   assert.match(content, /不提供医疗建议|不提供用药建议/);
 
   const paths = [...content.matchAll(/src: "(\/media\/[^"?]+)"/g)].map((match) => match[1]);

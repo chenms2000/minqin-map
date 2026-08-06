@@ -24,7 +24,7 @@ export type StoryPoint = {
   title: string;
   eyebrow: string;
   coordinates: [number, number];
-  accuracy: "县域叙事点" | "村级近似定位" | "公开知识点";
+  accuracy: "县域叙事点" | "村级近似定位" | "公开知识点" | "用户提供地图位点";
   date: string;
   summary: string;
   summaryEn: string;
@@ -63,6 +63,13 @@ export const sources: SourceRef[] = [
     title: "‘请到民勤种棵树’，缘何吸引数万青年志愿者",
     url: "https://www.forestry.gov.cn/lyj/1/kjzrjy/20260508/670031.html",
     publishedAt: "2026-05-08",
+  },
+  {
+    id: "minqin-base-report",
+    publisher: "国家林业和草原局（来源：新华网）",
+    title: "跨越山海种树护绿",
+    url: "https://www.forestry.gov.cn/lyj/1/dfdt/20260423/668473.html",
+    publishedAt: "2026-04-23",
   },
 ];
 
@@ -121,15 +128,15 @@ export const storyPoints: StoryPoint[] = [
   {
     id: "watering-practice",
     layer: "practice",
-    title: "公益林苗木养护",
-    eyebrow: "实践足迹 · 行动",
+    title: "民勤县种林公益发展中心公益林基地",
+    eyebrow: "实践足迹 · 具体位点",
     coordinates: [103.235, 38.835],
-    accuracy: "村级近似定位",
+    accuracy: "用户提供地图位点",
     date: "2026.08.04",
-    summary: "在民勤县种林公益发展中心相关基地开展浇水养护。点位仅落到公开报道确认的收成镇兴隆村层级，避免将推定位置伪装成精准坐标。",
-    summaryEn: "Students joined routine watering and maintenance at a public-interest desert afforestation site near Xinglong Village.",
+    summary: "根据团队提供的地图截图，本次浇水养护的具体地点为民勤县种林公益发展中心公益林基地。公开报道进一步确认基地位于收成镇兴隆村；当前标记对应团队确认的地图POI，不作为手机GPS实测坐标。",
+    summaryEn: "The team identified this public-interest forest base as the exact activity POI. Public reporting confirms it is in Xinglong Village; the marker is not presented as a phone-recorded GPS coordinate.",
     mediaIds: ["dawn-desert", "seedling", "team-walk", "irrigation-line", "irrigation-video", "watering-video", "banner-team", "banner-landscape", "sand-traces", "water-work"],
-    sourceIds: ["minqin-volunteers"],
+    sourceIds: ["minqin-volunteers", "minqin-base-report"],
     color: "#2f7658",
   },
   {
@@ -179,13 +186,13 @@ export const storyPoints: StoryPoint[] = [
     layer: "people",
     title: "仲麟与青年公益治沙",
     eyebrow: "人物故事 · 公开资料",
-    coordinates: [103.225, 38.83],
-    accuracy: "村级近似定位",
+    coordinates: [103.235, 38.835],
+    accuracy: "用户提供地图位点",
     date: "2023—2026",
     summary: "公开报道记载，仲麟返乡投身公益治沙，并在兴隆村持续组织志愿种树与后续养护。本页面只转述公开信息，不虚构现场采访引语。",
     summaryEn: "Public reporting documents Zhong Lin's return to Minqin and his continued work organizing volunteer planting and maintenance.",
     mediaIds: ["volunteer-base", "volunteer-signs", "watering-video"],
-    sourceIds: ["minqin-volunteers"],
+    sourceIds: ["minqin-volunteers", "minqin-base-report"],
     color: "#7a3f34",
   },
 ];
