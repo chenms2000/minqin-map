@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AttributionControl, Map as MapLibreMap, Marker, NavigationControl } from "maplibre-gl";
+import { AttributionControl, Map as MapLibreMap, Marker, NavigationControl, addProtocol, removeProtocol } from "maplibre-gl";
+import { layers, namedFlavor } from "@protomaps/basemaps";
+import { Protocol } from "pmtiles";
 import type { FeatureCollection, LineString, Polygon } from "geojson";
 import {
   herbs,
@@ -19,6 +21,52 @@ const layerMeta: Record<StoryLayer, { label: string; en: string; count: string }
   herbs: { label: "药材产业", en: "Herbal resources", count: "4 HERBS" },
   people: { label: "人物故事", en: "People", count: "1 STORY" },
 };
+
+const mapBounds: [[number, number], [number, number]] = [[102.45, 37.8], [103.75, 39.35]];
+
+function localMapStyle(tileUrl: string) {
+  const light = namedFlavor("light");
+  const atlasFlavor = {
+    ...light,
+    background: "#c4aa72",
+    earth: "#d8c79f",
+    sand: "#c9ad72",
+    water: "#79b7bf",
+    park_a: "#a5b77d",
+    park_b: "#8ea66a",
+    wood_a: "#9ead79",
+    wood_b: "#78915f",
+    scrub_a: "#b7bb83",
+    scrub_b: "#9ca26c",
+    boundaries: "#8f7958",
+    buildings: "#b69d75",
+    highway: "#f2e5c4",
+    major: "#eee0bd",
+    minor_a: "#d5c39a",
+    minor_b: "#e3d4ae",
+    landcover: light.landcover ? {
+      ...light.landcover,
+      barren: "#cfb981",
+      farmland: "#becb8d",
+      forest: "#819966",
+      grassland: "#adb881",
+      scrub: "#b4b47b",
+      urban_area: "#c8b993",
+    } : undefined,
+  };
+
+  return {
+    version: 8 as const,
+    sources: {
+      protomaps: {
+        type: "vector" as const,
+        url: `pmtiles://${tileUrl}`,
+        attribution: '<a href="https://www.openstreetmap.org/copyright" target="_blank">© OpenStreetMap contributors</a>',
+      },
+    },
+    layers: layers("protomaps", atlasFlavor),
+  };
+}
 
 const practiceRoute: FeatureCollection<LineString> = {
   type: "FeatureCollection",
@@ -106,20 +154,25 @@ export function Experience() {
   useEffect(() => {
     if (!mapContainer.current || mapInstance.current) return;
 
+    const protocol = new Protocol();
+    addProtocol("pmtiles", protocol.tile);
     let loaded = false;
     const fallbackTimer = window.setTimeout(() => {
       if (!loaded) setMapFallback(true);
-    }, 9000);
+    }, 6000);
 
     const map = new MapLibreMap({
       container: mapContainer.current,
-      style: "https://tiles.openfreemap.org/styles/liberty",
+      style: localMapStyle(`${window.location.origin}/maps/minqin-2026.pmtiles`),
       center: [103.16, 38.72],
       zoom: 8.15,
       pitch: 52,
       bearing: -18,
       attributionControl: false,
+      minZoom: 7.2,
+      maxZoom: 13,
       maxPitch: 68,
+      maxBounds: mapBounds,
     });
     mapInstance.current = map;
     map.addControl(new NavigationControl({ visualizePitch: true }), "bottom-right");
@@ -162,7 +215,7 @@ export function Experience() {
     });
 
     map.on("error", (event) => {
-      if (!loaded && String(event.error).toLowerCase().includes("style")) setMapFallback(true);
+      if (!loaded) setMapFallback(true);
     });
 
     return () => {
@@ -170,6 +223,7 @@ export function Experience() {
       markers.current.forEach((marker) => marker.remove());
       markers.current = [];
       map.remove();
+      removeProtocol("pmtiles");
       mapInstance.current = null;
     };
   }, []);
@@ -296,8 +350,9 @@ export function Experience() {
         </div>
 
         <div className="map-frame">
-          <div className="map-corner map-corner-top">MINQIN / 2026</div>
+          <div className="map-corner map-corner-top">MINQIN / LOCAL PMTILES</div>
           <div className="map-corner map-corner-bottom">拖动 · 缩放 · 倾斜 · 点击点位</div>
+          <div className="map-data-badge">本地离线底图 · OSM 2026.08.05 · 无需地图密钥</div>
           <div ref={mapContainer} className={`map-canvas ${mapFallback ? "is-hidden" : ""}`} aria-label="民勤互动地图" />
           {mapFallback && (
             <div className="fallback-map" role="img" aria-label="底图离线时的民勤示意沙盘">
@@ -309,7 +364,7 @@ export function Experience() {
                   <span>{String(index + 1).padStart(2, "0")}</span>{point.title}
                 </button>
               ))}
-              <p>在线底图暂不可用，已切换为本地示意沙盘；所有故事内容仍可访问。</p>
+              <p>本地底图文件未能读取，已切换为轻量示意沙盘；所有故事内容仍可访问。</p>
             </div>
           )}
           <div className="point-list" aria-label="当前图层点位">

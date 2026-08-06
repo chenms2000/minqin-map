@@ -15,8 +15,10 @@
     "media:prepare": "node scripts/prepare-media.mjs"
   },
   "dependencies": {
+    "@protomaps/basemaps": "^5.7.2",
     "drizzle-orm": "0.45.2",
     "maplibre-gl": "^6.2.0",
+    "pmtiles": "^4.4.1",
     "react": "19.2.6",
     "react-dom": "19.2.6"
   },

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { access, readFile } from "node:fs/promises";
+import { access, readFile, stat } from "node:fs/promises";
 import test from "node:test";
 
 const root = new URL("../", import.meta.url);
@@ -39,10 +39,22 @@ test("ships all curated media and no private contact details", async () => {
   assert.match(content, /用户提供地图位点/);
   assert.match(content, /不作为手机GPS实测坐标/);
   assert.match(content, /不提供医疗建议|不提供用药建议/);
+  assert.match(experience, /maps\/minqin-2026\.pmtiles/);
+  assert.match(experience, /本地离线底图/);
+  assert.doesNotMatch(experience, /tiles\.openfreemap\.org/);
 
   const paths = [...content.matchAll(/src: "(\/media\/[^"?]+)"/g)].map((match) => match[1]);
   assert.ok(paths.length >= 20, `expected at least 20 media references, found ${paths.length}`);
   await Promise.all([...new Set(paths)].map((item) => access(new URL(`public${item}`, root))));
+});
+
+test("bundles a valid regional PMTiles archive", async () => {
+  const archiveUrl = new URL("../public/maps/minqin-2026.pmtiles", import.meta.url);
+  const archiveStat = await stat(archiveUrl);
+  assert.ok(archiveStat.size > 500_000, "regional basemap archive is unexpectedly small");
+  assert.ok(archiveStat.size < 10_000_000, "regional basemap archive exceeds the intended lightweight budget");
+  const archive = await readFile(archiveUrl);
+  assert.equal(archive.subarray(0, 7).toString("utf8"), "PMTiles");
 });
 
 test("map content has unique ids and valid coordinate ranges", async () => {
