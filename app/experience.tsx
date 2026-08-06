@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AttributionControl, Map as MapLibreMap, Marker, NavigationControl, addProtocol, removeProtocol } from "maplibre-gl";
 import { layers, namedFlavor } from "@protomaps/basemaps";
-import { Protocol } from "pmtiles";
+import { FileSource, PMTiles, Protocol } from "pmtiles";
 import type { FeatureCollection, LineString, Polygon } from "geojson";
 import {
   herbs,
@@ -23,6 +23,7 @@ const layerMeta: Record<StoryLayer, { label: string; en: string; count: string }
 };
 
 const mapBounds: [[number, number], [number, number]] = [[102.45, 37.8], [103.75, 39.35]];
+const localArchiveName = "minqin-2026.pmtiles";
 const contextLabels = [
   { name: "武威市 / 凉州", coordinates: [102.63488, 37.92782] as [number, number], kind: "city" },
   { name: "民勤县", coordinates: [103.09493, 38.6268] as [number, number], kind: "city" },
@@ -158,6 +159,7 @@ export function Experience() {
   const [activeLayer, setActiveLayer] = useState<StoryLayer>("practice");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [mapFallback, setMapFallback] = useState(false);
+  const [mapReady, setMapReady] = useState(false);
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<MapLibreMap | null>(null);
   const markers = useRef<Marker[]>([]);
@@ -176,75 +178,110 @@ export function Experience() {
     if (!mapContainer.current || mapInstance.current) return;
 
     const protocol = new Protocol();
-    addProtocol("pmtiles", protocol.tile);
+    const abortController = new AbortController();
+    let map: MapLibreMap | null = null;
+    let protocolRegistered = false;
+    let disposed = false;
     let loaded = false;
     const fallbackTimer = window.setTimeout(() => {
       if (!loaded) setMapFallback(true);
-    }, 6000);
+    }, 10000);
 
-    const map = new MapLibreMap({
-      container: mapContainer.current,
-      style: localMapStyle(`${window.location.origin}/maps/minqin-2026.pmtiles`),
-      center: [103.16, 38.72],
-      zoom: 9.15,
-      pitch: 38,
-      bearing: -12,
-      attributionControl: false,
-      minZoom: 7.2,
-      maxZoom: 13,
-      maxPitch: 68,
-      maxBounds: mapBounds,
-    });
-    mapInstance.current = map;
-    map.addControl(new NavigationControl({ visualizePitch: true }), "bottom-right");
-    map.addControl(new AttributionControl({ compact: true }), "bottom-left");
+    async function initializeMap() {
+      try {
+        const response = await fetch(`/maps/${localArchiveName}`, {
+          cache: "force-cache",
+          signal: abortController.signal,
+        });
+        if (!response.ok) throw new Error(`PMTiles request failed: ${response.status}`);
 
-    map.once("load", () => {
-      loaded = true;
-      window.clearTimeout(fallbackTimer);
-      setMapFallback(false);
+        const archiveBlob = await response.blob();
+        if (archiveBlob.size < 1024) throw new Error("PMTiles archive is incomplete");
 
-      map.addSource("oasis", { type: "geojson", data: oasisShape });
-      map.addLayer({
-        id: "oasis-fill",
-        type: "fill",
-        source: "oasis",
-        paint: { "fill-color": "#83a64b", "fill-opacity": 0.08 },
-      });
-      map.addLayer({
-        id: "oasis-outline",
-        type: "line",
-        source: "oasis",
-        paint: { "line-color": "#517942", "line-width": 1.5, "line-opacity": 0.42 },
-      });
-      map.addSource("practice-route", { type: "geojson", data: practiceRoute });
-      map.addLayer({
-        id: "practice-route-line",
-        type: "line",
-        source: "practice-route",
-        layout: { "line-cap": "round", "line-join": "round" },
-        paint: { "line-color": "#d95c3d", "line-width": 3, "line-opacity": 0.78, "line-dasharray": [1, 1.8] },
-      });
-      map.addSource("water-route", { type: "geojson", data: waterRoute });
-      map.addLayer({
-        id: "water-route-line",
-        type: "line",
-        source: "water-route",
-        layout: { visibility: "none", "line-cap": "round", "line-join": "round" },
-        paint: { "line-color": "#228aa1", "line-width": 5, "line-opacity": 0.8 },
-      });
-    });
+        const archiveFile = new File([archiveBlob], localArchiveName, { type: "application/octet-stream" });
+        const archive = new PMTiles(new FileSource(archiveFile));
+        await archive.getHeader();
+        if (disposed || !mapContainer.current) return;
 
-    map.on("error", (event) => {
-      if (!loaded) setMapFallback(true);
-    });
+        protocol.add(archive);
+        addProtocol("pmtiles", protocol.tile);
+        protocolRegistered = true;
+
+        map = new MapLibreMap({
+          container: mapContainer.current,
+          style: localMapStyle(localArchiveName),
+          center: [103.16, 38.72],
+          zoom: 9.15,
+          pitch: 38,
+          bearing: -12,
+          attributionControl: false,
+          minZoom: 7.2,
+          maxZoom: 13,
+          maxPitch: 68,
+          maxBounds: mapBounds,
+        });
+        mapInstance.current = map;
+        map.addControl(new NavigationControl({ visualizePitch: true }), "bottom-right");
+        map.addControl(new AttributionControl({ compact: true }), "bottom-left");
+
+        map.once("load", () => {
+          if (!map || disposed) return;
+          loaded = true;
+          window.clearTimeout(fallbackTimer);
+          setMapFallback(false);
+
+          map.addSource("oasis", { type: "geojson", data: oasisShape });
+          map.addLayer({
+            id: "oasis-fill",
+            type: "fill",
+            source: "oasis",
+            paint: { "fill-color": "#83a64b", "fill-opacity": 0.08 },
+          });
+          map.addLayer({
+            id: "oasis-outline",
+            type: "line",
+            source: "oasis",
+            paint: { "line-color": "#517942", "line-width": 1.5, "line-opacity": 0.42 },
+          });
+          map.addSource("practice-route", { type: "geojson", data: practiceRoute });
+          map.addLayer({
+            id: "practice-route-line",
+            type: "line",
+            source: "practice-route",
+            layout: { "line-cap": "round", "line-join": "round" },
+            paint: { "line-color": "#d95c3d", "line-width": 3, "line-opacity": 0.78, "line-dasharray": [1, 1.8] },
+          });
+          map.addSource("water-route", { type: "geojson", data: waterRoute });
+          map.addLayer({
+            id: "water-route-line",
+            type: "line",
+            source: "water-route",
+            layout: { visibility: "none", "line-cap": "round", "line-join": "round" },
+            paint: { "line-color": "#228aa1", "line-width": 5, "line-opacity": 0.8 },
+          });
+          setMapReady(true);
+        });
+
+        map.on("error", () => {
+          if (!loaded) setMapFallback(true);
+        });
+      } catch (error) {
+        if (abortController.signal.aborted || disposed) return;
+        window.clearTimeout(fallbackTimer);
+        setMapFallback(true);
+      }
+    }
+
+    void initializeMap();
 
     return () => {
+      disposed = true;
+      abortController.abort();
       window.clearTimeout(fallbackTimer);
       markers.current.forEach((marker) => marker.remove());
       markers.current = [];
-      map.remove();
-      removeProtocol("pmtiles");
+      map?.remove();
+      if (protocolRegistered) removeProtocol("pmtiles");
       mapInstance.current = null;
     };
   }, []);
@@ -279,7 +316,7 @@ export function Experience() {
       map.setLayoutProperty("practice-route-line", "visibility", activeLayer === "practice" ? "visible" : "none");
       map.setLayoutProperty("water-route-line", "visibility", activeLayer === "water" ? "visible" : "none");
     }
-  }, [activeLayer, activePoints]);
+  }, [activeLayer, activePoints, mapReady]);
 
   useEffect(() => {
     if (!selected) return;
