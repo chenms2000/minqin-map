@@ -24,8 +24,14 @@ const layerMeta: Record<StoryLayer, { label: string; en: string; count: string }
 
 const mapBounds: [[number, number], [number, number]] = [[102.45, 37.8], [103.75, 39.35]];
 const contextLabels = [
-  { name: "武威 / 凉州", coordinates: [102.6378, 37.9283] as [number, number], kind: "city" },
-  { name: "民勤县城", coordinates: [103.0938, 38.6247] as [number, number], kind: "city" },
+  { name: "武威市 / 凉州", coordinates: [102.63488, 37.92782] as [number, number], kind: "city" },
+  { name: "民勤县", coordinates: [103.09493, 38.6268] as [number, number], kind: "city" },
+  { name: "薛百镇", coordinates: [103.01974, 38.54682] as [number, number], kind: "town" },
+  { name: "大滩镇", coordinates: [103.24651, 38.76667] as [number, number], kind: "town" },
+  { name: "泉山镇", coordinates: [103.3065, 38.86036] as [number, number], kind: "town" },
+  { name: "收成镇", coordinates: [103.60322, 38.90018] as [number, number], kind: "town" },
+  { name: "西渠镇", coordinates: [103.54082, 38.97829] as [number, number], kind: "town" },
+  { name: "东湖镇", coordinates: [103.67343, 38.9498] as [number, number], kind: "town" },
   { name: "红崖山水库", coordinates: [103.04, 38.42] as [number, number], kind: "water" },
   { name: "青土湖", coordinates: [103.56, 39.12] as [number, number], kind: "water" },
 ];
@@ -34,22 +40,31 @@ function localMapStyle(tileUrl: string) {
   const light = namedFlavor("light");
   const atlasFlavor = {
     ...light,
-    background: "#c4aa72",
-    earth: "#d8c79f",
-    sand: "#c9ad72",
-    water: "#79b7bf",
+    background: "#bfa36b",
+    earth: "#e1d2aa",
+    sand: "#d5bb80",
+    water: "#4f9eae",
     park_a: "#a5b77d",
     park_b: "#8ea66a",
     wood_a: "#9ead79",
     wood_b: "#78915f",
     scrub_a: "#b7bb83",
     scrub_b: "#9ca26c",
-    boundaries: "#8f7958",
+    boundaries: "#876d47",
     buildings: "#b69d75",
-    highway: "#f2e5c4",
-    major: "#eee0bd",
-    minor_a: "#d5c39a",
-    minor_b: "#e3d4ae",
+    highway_casing_early: "#8c6747",
+    highway_casing_late: "#8c6747",
+    major_casing_early: "#9b7855",
+    major_casing_late: "#9b7855",
+    minor_casing: "#aa8c67",
+    highway: "#fff4d5",
+    major: "#f8e7be",
+    minor_a: "#c7ab7b",
+    minor_b: "#ead7ab",
+    roads_label_major: "#4d3f2d",
+    roads_label_major_halo: "#f4e7c7",
+    city_label: "#263f32",
+    city_label_halo: "#f4e7c7",
     landcover: light.landcover ? {
       ...light.landcover,
       barren: "#cfb981",
@@ -171,9 +186,9 @@ export function Experience() {
       container: mapContainer.current,
       style: localMapStyle(`${window.location.origin}/maps/minqin-2026.pmtiles`),
       center: [103.16, 38.72],
-      zoom: 8.9,
-      pitch: 52,
-      bearing: -18,
+      zoom: 9.15,
+      pitch: 38,
+      bearing: -12,
       attributionControl: false,
       minZoom: 7.2,
       maxZoom: 13,
@@ -194,13 +209,13 @@ export function Experience() {
         id: "oasis-fill",
         type: "fill",
         source: "oasis",
-        paint: { "fill-color": "#83a64b", "fill-opacity": 0.16 },
+        paint: { "fill-color": "#83a64b", "fill-opacity": 0.08 },
       });
       map.addLayer({
         id: "oasis-outline",
         type: "line",
         source: "oasis",
-        paint: { "line-color": "#517942", "line-width": 2, "line-opacity": 0.48 },
+        paint: { "line-color": "#517942", "line-width": 1.5, "line-opacity": 0.42 },
       });
       map.addSource("practice-route", { type: "geojson", data: practiceRoute });
       map.addLayer({
@@ -208,7 +223,7 @@ export function Experience() {
         type: "line",
         source: "practice-route",
         layout: { "line-cap": "round", "line-join": "round" },
-        paint: { "line-color": "#d95c3d", "line-width": 4, "line-opacity": 0.82, "line-dasharray": [1, 1.5] },
+        paint: { "line-color": "#d95c3d", "line-width": 3, "line-opacity": 0.78, "line-dasharray": [1, 1.8] },
       });
       map.addSource("water-route", { type: "geojson", data: waterRoute });
       map.addLayer({
@@ -364,9 +379,9 @@ export function Experience() {
         </div>
 
         <div className="map-frame">
-          <div className="map-corner map-corner-top">MINQIN / LOCAL PMTILES</div>
+          <div className="map-corner map-corner-top">MINQIN / OFFLINE OSM</div>
           <div className="map-corner map-corner-bottom">拖动 · 缩放 · 倾斜 · 点击点位</div>
-          <div className="map-data-badge">本地离线底图 · OSM 2026.08.05 · 无需地图密钥</div>
+          <div className="map-data-badge">真实地理底图 · 本地 PMTiles · OSM 2026.08.05</div>
           <div ref={mapContainer} className={`map-canvas ${mapFallback ? "is-hidden" : ""}`} aria-label="民勤互动地图" />
           {mapFallback && (
             <div className="fallback-map" role="img" aria-label="底图离线时的民勤示意沙盘">
