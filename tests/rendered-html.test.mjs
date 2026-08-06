@@ -41,6 +41,8 @@ test("ships all curated media and no private contact details", async () => {
   assert.match(content, /不提供医疗建议|不提供用药建议/);
   assert.match(experience, /maps\/minqin-2026\.pmtiles/);
   assert.match(experience, /本地离线底图/);
+  assert.match(experience, /武威 \/ 凉州/);
+  assert.match(experience, /青土湖/);
   assert.doesNotMatch(experience, /tiles\.openfreemap\.org/);
 
   const paths = [...content.matchAll(/src: "(\/media\/[^"?]+)"/g)].map((match) => match[1]);

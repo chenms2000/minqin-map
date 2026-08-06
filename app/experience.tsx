@@ -23,6 +23,12 @@ const layerMeta: Record<StoryLayer, { label: string; en: string; count: string }
 };
 
 const mapBounds: [[number, number], [number, number]] = [[102.45, 37.8], [103.75, 39.35]];
+const contextLabels = [
+  { name: "武威 / 凉州", coordinates: [102.6378, 37.9283] as [number, number], kind: "city" },
+  { name: "民勤县城", coordinates: [103.0938, 38.6247] as [number, number], kind: "city" },
+  { name: "红崖山水库", coordinates: [103.04, 38.42] as [number, number], kind: "water" },
+  { name: "青土湖", coordinates: [103.56, 39.12] as [number, number], kind: "water" },
+];
 
 function localMapStyle(tileUrl: string) {
   const light = namedFlavor("light");
@@ -233,6 +239,14 @@ export function Experience() {
     if (!map) return;
     markers.current.forEach((marker) => marker.remove());
     markers.current = [];
+
+    contextLabels.forEach((label) => {
+      const element = document.createElement("div");
+      element.className = `map-context-label ${label.kind}`;
+      element.textContent = label.name;
+      element.setAttribute("aria-hidden", "true");
+      markers.current.push(new Marker({ element, anchor: "center" }).setLngLat(label.coordinates).addTo(map));
+    });
 
     activePoints.forEach((point, index) => {
       const button = document.createElement("button");

@@ -116,6 +116,8 @@ img, video { display: block; max-width: 100%; }
 .map-story-marker::after { content: ""; position: absolute; inset: 6px; border: 1px solid rgba(255,255,255,.6); border-radius: 50%; }
 .map-story-marker { text-indent: -1px; }
 .map-story-marker:hover, .map-story-marker:focus-visible { z-index: 2; outline: 3px solid rgba(229,197,126,.72); outline-offset: 3px; }
+.map-context-label { padding: 4px 7px; border: 1px solid rgba(255,255,255,.45); border-radius: 999px; color: #21372c; background: rgba(246,241,224,.88); box-shadow: 0 3px 12px rgba(33,55,44,.18); font-size: 9px; font-weight: 700; letter-spacing: .04em; white-space: nowrap; pointer-events: none; }
+.map-context-label.water { color: #165e70; background: rgba(222,242,240,.9); }
 .maplibregl-marker { color: #fff; }
 .maplibregl-ctrl-group { border-radius: 0 !important; background: rgba(245,241,230,.92) !important; }
 .maplibregl-ctrl-attrib { font-size: 9px !important; }
