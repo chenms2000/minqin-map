@@ -8,67 +8,79 @@ async function render() {
   const workerUrl = new URL("../dist/server/index.js", import.meta.url);
   workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);
   const { default: worker } = await import(workerUrl.href);
-  return worker.fetch(
-    new Request("http://localhost/", { headers: { accept: "text/html" } }),
-    { ASSETS: { fetch: async () => new Response("Not found", { status: 404 }) } },
-    { waitUntil() {}, passThroughOnException() {} },
-  );
+  return worker.fetch(new Request("http://localhost/", { headers: { accept: "text/html", host: "localhost" } }), { ASSETS: { fetch: async () => new Response("Not found", { status: 404 }) } }, { waitUntil() {}, passThroughOnException() {} });
 }
 
-test("server-renders the finished Minqin atlas", async () => {
+test("server-renders the first formal release", async () => {
   const response = await render();
   assert.equal(response.status, 200);
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
   const html = await response.text();
-  assert.match(html, /民勤中医药生态文化数字地图/);
-  assert.match(html, /在沙与水之间/);
-  assert.match(html, /实践足迹/);
-  assert.match(html, /绿洲水脉/);
-  assert.match(html, /药材产业/);
-  assert.match(html, /人物故事/);
+  for (const label of ["民勤中医药生态文化数字地图", "首期正式成果", "项目档案", "开始5分钟导览", "实践足迹", "绿洲水脉", "药材产业", "人物故事", "实践影像", "资料与方法说明"]) assert.match(html, new RegExp(label));
+  assert.match(html, /og:image/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape|react-loading-skeleton/i);
 });
 
-test("ships all curated media and no private contact details", async () => {
+test("ships curated media, local map and social card", async () => {
   const content = await readFile(new URL("../app/content.ts", import.meta.url), "utf8");
   const experience = await readFile(new URL("../app/experience.tsx", import.meta.url), "utf8");
-  assert.doesNotMatch(`${content}\n${experience}`, /\b1[3-9]\d{9}\b/);
-  assert.doesNotMatch(`${content}\n${experience}`, /@(?:163|qq|bucm)\.com/i);
-  assert.match(content, /村级近似定位/);
-  assert.match(content, /民勤县种林公益发展中心公益林基地/);
-  assert.match(content, /用户提供地图位点/);
-  assert.match(content, /不作为手机GPS实测坐标/);
-  assert.match(content, /不提供医疗建议|不提供用药建议/);
-  assert.match(experience, /maps\/minqin-2026\.pmtiles/);
+  assert.match(experience, /localArchivePath = "\/maps\/minqin-2026\.pmtiles"/);
   assert.match(experience, /本地离线底图/);
-  assert.match(experience, /武威 \/ 凉州/);
-  assert.match(experience, /青土湖/);
+  assert.match(experience, /武威市 \/ 凉州/);
+  assert.match(experience, /叙事路径，非导航路线/);
+  assert.doesNotMatch(experience, /oasisShape|oasis-fill|oasis-outline/);
   assert.doesNotMatch(experience, /tiles\.openfreemap\.org/);
 
-  const paths = [...content.matchAll(/src: "(\/media\/[^"?]+)"/g)].map((match) => match[1]);
-  assert.ok(paths.length >= 20, `expected at least 20 media references, found ${paths.length}`);
-  await Promise.all([...new Set(paths)].map((item) => access(new URL(`public${item}`, root))));
+  const mediaPaths = [...content.matchAll(/(?:src|poster): "(\/media\/[^"?]+)"/g)].map((match) => match[1]);
+  assert.ok(new Set(mediaPaths).size >= 20, `expected at least 20 media assets, found ${new Set(mediaPaths).size}`);
+  await Promise.all([...new Set(mediaPaths)].map((item) => access(new URL(`public${item}`, root))));
+  const socialCard = await stat(new URL("../public/og.png", import.meta.url));
+  assert.ok(socialCard.size > 100_000 && socialCard.size < 3_000_000, "social card should be optimized for sharing");
 });
 
-test("bundles a valid regional PMTiles archive", async () => {
+test("content ids and references are internally consistent", async () => {
+  const content = await readFile(new URL("../app/content.ts", import.meta.url), "utf8");
+  const section = (start, end) => content.slice(content.indexOf(start), content.indexOf(end));
+  const idsIn = (text) => new Set([...text.matchAll(/\bid: "([^"]+)"/g)].map((match) => match[1]));
+  const sourceIds = idsIn(section("export const sources", "export const media"));
+  const mediaIds = idsIn(section("export const media", "export const storyPoints"));
+  const pointIds = idsIn(section("export const storyPoints", "export const herbs"));
+  const allDefinitions = [...sourceIds, ...mediaIds, ...pointIds, ...idsIn(section("export const herbs", "export const waterTimeline")), ...idsIn(section("export const tourChapters", "export const mediaById"))];
+  assert.equal(new Set(allDefinitions).size, allDefinitions.length, "all structured content ids must be unique");
+
+  for (const [, values] of content.matchAll(/sourceIds: \[([^\]]*)\]/g)) for (const [, id] of values.matchAll(/"([^"]+)"/g)) assert.ok(sourceIds.has(id), `unknown source id: ${id}`);
+  for (const [, values] of content.matchAll(/mediaIds: \[([^\]]*)\]/g)) for (const [, id] of values.matchAll(/"([^"]+)"/g)) assert.ok(mediaIds.has(id), `unknown media id: ${id}`);
+  for (const [, values] of content.matchAll(/pointIds: \[([^\]]*)\]/g)) for (const [, id] of values.matchAll(/"([^"]+)"/g)) assert.ok(pointIds.has(id), `unknown story point id: ${id}`);
+  for (const [, id] of content.matchAll(/leadMediaId: "([^"]+)"/g)) assert.ok(mediaIds.has(id), `unknown lead media id: ${id}`);
+  assert.equal([...content.matchAll(/featured: true/g)].length, 10, "tour media count is data-driven and intentionally curated");
+});
+
+test("map archive is a lightweight valid PMTiles package", async () => {
   const packageJson = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
-  assert.match(packageJson.dependencies["maplibre-gl"], /^\^?5\./, "PMTiles rendering currently requires the compatible MapLibre 5 line");
+  assert.match(packageJson.dependencies["maplibre-gl"], /^\^?5\./);
   const archiveUrl = new URL("../public/maps/minqin-2026.pmtiles", import.meta.url);
   const archiveStat = await stat(archiveUrl);
-  assert.ok(archiveStat.size > 500_000, "regional basemap archive is unexpectedly small");
-  assert.ok(archiveStat.size < 10_000_000, "regional basemap archive exceeds the intended lightweight budget");
+  assert.ok(archiveStat.size > 500_000);
+  assert.ok(archiveStat.size < 10_000_000);
   const archive = await readFile(archiveUrl);
   assert.equal(archive.subarray(0, 7).toString("utf8"), "PMTiles");
 });
 
-test("map content has unique ids and valid coordinate ranges", async () => {
+test("coordinates stay in scope and privacy/content boundaries hold", async () => {
   const content = await readFile(new URL("../app/content.ts", import.meta.url), "utf8");
-  const ids = [...content.matchAll(/^\s+id: "([^"]+)",$/gm)].map((match) => match[1]);
-  assert.equal(new Set(ids).size, ids.length, "content ids must be unique");
+  const experience = await readFile(new URL("../app/experience.tsx", import.meta.url), "utf8");
+  const output = `${content}\n${experience}`;
   const coordinates = [...content.matchAll(/coordinates: \[([\d.]+), ([\d.]+)\]/g)].map((match) => [Number(match[1]), Number(match[2])]);
-  assert.ok(coordinates.length >= 7);
+  assert.ok(coordinates.length >= 10);
   for (const [longitude, latitude] of coordinates) {
-    assert.ok(longitude >= 102 && longitude <= 105, `longitude out of Minqin/Hexi scope: ${longitude}`);
-    assert.ok(latitude >= 37 && latitude <= 40, `latitude out of Minqin/Hexi scope: ${latitude}`);
+    assert.ok(longitude >= 102 && longitude <= 105, `longitude out of scope: ${longitude}`);
+    assert.ok(latitude >= 37 && latitude <= 40, `latitude out of scope: ${latitude}`);
   }
+  assert.doesNotMatch(output, /\b1[3-9]\d{9}\b/);
+  assert.doesNotMatch(output, /[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/);
+  assert.doesNotMatch(output, /用户提供地图位点|精确活动坐标|现场采访称/);
+  assert.match(output, /收成镇兴隆村/);
+  assert.match(output, /村级近似定位/);
+  assert.match(output, /不提供企业规模和医疗功效信息|不宣传医疗功效/);
+  assert.match(output, /非采访引语/);
 });
