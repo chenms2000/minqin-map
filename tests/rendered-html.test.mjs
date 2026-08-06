@@ -51,6 +51,8 @@ test("ships all curated media and no private contact details", async () => {
 });
 
 test("bundles a valid regional PMTiles archive", async () => {
+  const packageJson = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
+  assert.match(packageJson.dependencies["maplibre-gl"], /^\^?5\./, "PMTiles rendering currently requires the compatible MapLibre 5 line");
   const archiveUrl = new URL("../public/maps/minqin-2026.pmtiles", import.meta.url);
   const archiveStat = await stat(archiveUrl);
   assert.ok(archiveStat.size > 500_000, "regional basemap archive is unexpectedly small");

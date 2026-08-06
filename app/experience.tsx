@@ -171,7 +171,7 @@ export function Experience() {
       container: mapContainer.current,
       style: localMapStyle(`${window.location.origin}/maps/minqin-2026.pmtiles`),
       center: [103.16, 38.72],
-      zoom: 8.15,
+      zoom: 8.9,
       pitch: 52,
       bearing: -18,
       attributionControl: false,
