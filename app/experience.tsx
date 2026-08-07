@@ -12,13 +12,37 @@ import {
   herbs,
   media,
   mediaById,
+  relationshipEdges,
   sourceById,
   sources,
+  storyPointById,
   storyPoints,
+  timelineEvents,
   tourChapters,
+  waterStages,
   waterTimeline,
+  type ResourceSectionKey,
   type StoryLayer,
+  type TimelineCategory,
 } from "./content";
+
+type ExhibitModule = "tour" | "field" | "water" | "resources";
+
+const exhibitModuleMeta: Array<{ id: ExhibitModule; label: string; en: string }> = [
+  { id: "tour", label: "五章导览", en: "GUIDED STORY" },
+  { id: "field", label: "实践轨迹", en: "FIELD PLAYER" },
+  { id: "water", label: "水脉时间机", en: "WATER TIME" },
+  { id: "resources", label: "药材标本柜", en: "SPECIMEN CABINET" },
+];
+
+const resourceSectionMeta: Array<{ id: ResourceSectionKey; label: string }> = [
+  { id: "habitat", label: "生境" },
+  { id: "ecology", label: "生态关系" },
+  { id: "cultivation", label: "种植" },
+  { id: "harvest", label: "采收" },
+  { id: "processing", label: "初加工" },
+  { id: "communication", label: "传播" },
+];
 
 const layerMeta: Record<StoryLayer, { label: string; en: string }> = {
   practice: { label: "实践足迹", en: "Field notes" },
@@ -93,6 +117,15 @@ export function Experience() {
   const [showAllMedia, setShowAllMedia] = useState(false);
   const [tourMode, setTourMode] = useState(false);
   const [tourIndex, setTourIndex] = useState(0);
+  const [exhibitModule, setExhibitModule] = useState<ExhibitModule>("tour");
+  const [timelineDay, setTimelineDay] = useState<"2026-08-03" | "2026-08-04">("2026-08-03");
+  const [timelineCategory, setTimelineCategory] = useState<TimelineCategory | "全部">("全部");
+  const [timelineIndex, setTimelineIndex] = useState(0);
+  const [waterStageIndex, setWaterStageIndex] = useState(0);
+  const [resourceIndex, setResourceIndex] = useState(0);
+  const [resourceSection, setResourceSection] = useState<ResourceSectionKey>("habitat");
+  const [resourceView, setResourceView] = useState<"specimen" | "relations">("specimen");
+  const [relationshipIndex, setRelationshipIndex] = useState(0);
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapFrame = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<MapLibreMap | null>(null);
@@ -101,6 +134,7 @@ export function Experience() {
   const mapSection = useRef<HTMLElement>(null);
   const tourPanel = useRef<HTMLElement>(null);
   const previousFocus = useRef<HTMLElement | null>(null);
+  const touchStartX = useRef<number | null>(null);
 
   const activePoints = useMemo(() => storyPoints.filter((point) => point.layer === activeLayer), [activeLayer]);
   const selected = storyPoints.find((point) => point.id === selectedId) ?? null;
@@ -108,6 +142,14 @@ export function Experience() {
   const selectedSources = selected?.sourceIds.map((id) => sourceById.get(id)).filter(Boolean) ?? [];
   const chapter = tourChapters[tourIndex];
   const chapterMedia = mediaById.get(chapter.leadMediaId);
+  const filteredTimelineEvents = useMemo(() => timelineEvents.filter((event) => event.day === timelineDay && (timelineCategory === "全部" || event.category === timelineCategory)), [timelineCategory, timelineDay]);
+  const timelineEvent = filteredTimelineEvents[Math.min(timelineIndex, Math.max(0, filteredTimelineEvents.length - 1))];
+  const timelineMedia = timelineEvent ? mediaById.get(timelineEvent.mediaId) : undefined;
+  const timelinePoint = timelineEvent ? storyPointById.get(timelineEvent.storyPointId) : undefined;
+  const waterStage = waterStages[waterStageIndex];
+  const selectedResource = herbs[resourceIndex];
+  const selectedResourcePoint = storyPointById.get(selectedResource.mapPointId);
+  const selectedRelationship = relationshipEdges[relationshipIndex];
   const fieldDates = new Set(storyPoints.filter((point) => point.contentOrigin === "团队实践").map((point) => point.date));
   const visitedPoints = storyPoints.filter((point) => point.contentOrigin === "团队实践").length;
   const publicPoints = storyPoints.filter((point) => point.contentOrigin === "公开资料").length;
@@ -116,6 +158,26 @@ export function Experience() {
     { key: "2026-08-03", label: "8月3日", title: "进入民勤 · 荒漠观察" },
     { key: "2026-08-04", label: "8月4日", title: "公益林养护 · 青年记录" },
   ];
+
+  useEffect(() => {
+    const openFromUrl = () => {
+      const params = new URLSearchParams(window.location.search);
+      const requested = params.get("module") as ExhibitModule | null;
+      if (params.get("view") === "exhibit") {
+        const requestedModule = exhibitModuleMeta.some((item) => item.id === requested) ? requested! : "tour";
+        setExhibitModule(requestedModule);
+        if (requestedModule === "field") setActiveLayer("practice");
+        if (requestedModule === "water") setActiveLayer("water");
+        if (requestedModule === "resources") setActiveLayer("herbs");
+        setTourMode(true);
+      } else {
+        setTourMode(false);
+      }
+    };
+    const timer = window.setTimeout(openFromUrl, 0);
+    window.addEventListener("popstate", openFromUrl);
+    return () => { window.clearTimeout(timer); window.removeEventListener("popstate", openFromUrl); };
+  }, []);
 
   useEffect(() => {
     if (!mapContainer.current || mapInstance.current) return;
@@ -129,6 +191,7 @@ export function Experience() {
 
     async function initializeMap() {
       try {
+        if (new URLSearchParams(window.location.search).get("map") === "fallback") throw new Error("Fallback preview requested");
         const response = await fetch(localArchivePath, { cache: "force-cache", signal: abortController.signal });
         if (!response.ok) throw new Error(`PMTiles request failed: ${response.status}`);
         const total = Number(response.headers.get("content-length")) || 0;
@@ -220,14 +283,16 @@ export function Experience() {
       button.setAttribute("aria-label", `打开故事：${point.title}`);
       button.title = `${point.title}｜${point.accuracy}`;
       button.textContent = String(index + 1).padStart(2, "0");
-      button.addEventListener("click", () => setSelectedId(point.id));
+      button.addEventListener("click", () => activateMapPoint(point.id));
       markers.current.push(new Marker({ element: button, anchor: "bottom" }).setLngLat(point.coordinates).addTo(map));
     });
     if (map.loaded()) {
       map.setLayoutProperty("practice-route-line", "visibility", activeLayer === "practice" ? "visible" : "none");
       map.setLayoutProperty("water-route-line", "visibility", activeLayer === "water" ? "visible" : "none");
     }
-  }, [activeLayer, activePoints, mapReady]);
+    // activateMapPoint intentionally follows the current exhibit state captured by this effect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeLayer, activePoints, exhibitModule, filteredTimelineEvents, mapReady, tourMode]);
 
   useEffect(() => {
     if (!selected) return;
@@ -245,17 +310,24 @@ export function Experience() {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const timer = window.setTimeout(() => {
       mapInstance.current?.resize();
-      mapInstance.current?.easeTo({ ...chapter.mapView, duration: reduced ? 0 : 850 });
+      if (exhibitModule === "tour") mapInstance.current?.easeTo({ ...chapter.mapView, duration: reduced ? 0 : 850 });
+      if (exhibitModule === "field" && timelinePoint) mapInstance.current?.easeTo({ center: timelinePoint.coordinates, zoom: 9.5, pitch: 48, bearing: -8, duration: reduced ? 0 : 700 });
+      if (exhibitModule === "water") mapInstance.current?.easeTo({ ...waterStage.mapView, duration: reduced ? 0 : 800 });
+      if (exhibitModule === "resources" && selectedResourcePoint) mapInstance.current?.easeTo({ center: selectedResourcePoint.coordinates, zoom: 9.25, pitch: 44, bearing: -7, duration: reduced ? 0 : 700 });
       tourPanel.current?.focus();
     }, 80);
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "ArrowRight") goToChapter(tourIndex + 1);
-      if (event.key === "ArrowLeft") goToChapter(tourIndex - 1);
+      const target = event.target as HTMLElement | null;
+      if (target?.matches("input, video, select, textarea")) return;
       if (event.key === "Escape") endTour();
+      if (event.key === "ArrowRight") stepExhibit(1);
+      if (event.key === "ArrowLeft") stepExhibit(-1);
     };
     window.addEventListener("keydown", onKeyDown);
     return () => { window.clearTimeout(timer); window.removeEventListener("keydown", onKeyDown); };
-  }, [chapter, tourIndex, tourMode]);
+    // Keyboard handlers intentionally use the current module step functions captured here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chapter, exhibitModule, selectedResourcePoint, timelinePoint, tourIndex, tourMode, waterStage]);
 
   function closeStory() {
     setSelectedId(null);
@@ -266,12 +338,36 @@ export function Experience() {
     mapSection.current?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
   }
 
+  function updateExhibitUrl(module: ExhibitModule | null) {
+    const url = new URL(window.location.href);
+    if (module) {
+      url.searchParams.set("view", "exhibit");
+      url.searchParams.set("module", module);
+    } else {
+      url.searchParams.delete("view");
+      url.searchParams.delete("module");
+    }
+    window.history.pushState({}, "", `${url.pathname}${url.search}${url.hash}`);
+  }
+
   function startTour() {
     previousFocus.current = document.activeElement as HTMLElement;
     setTourIndex(0);
+    setExhibitModule("tour");
     setActiveLayer(tourChapters[0].layer);
     setSelectedId(null);
     setTourMode(true);
+    updateExhibitUrl("tour");
+  }
+
+  function selectExhibitModule(module: ExhibitModule) {
+    setExhibitModule(module);
+    setSelectedId(null);
+    if (module === "tour") setActiveLayer(chapter.layer);
+    if (module === "field") setActiveLayer("practice");
+    if (module === "water") setActiveLayer("water");
+    if (module === "resources") setActiveLayer("herbs");
+    updateExhibitUrl(module);
   }
 
   function goToChapter(nextIndex: number) {
@@ -283,7 +379,70 @@ export function Experience() {
 
   function endTour() {
     setTourMode(false);
+    updateExhibitUrl(null);
     window.setTimeout(() => { mapInstance.current?.resize(); previousFocus.current?.focus(); }, 90);
+  }
+
+  function selectTimelineEvent(nextIndex: number) {
+    setTimelineIndex(Math.max(0, Math.min(filteredTimelineEvents.length - 1, nextIndex)));
+    setActiveLayer("practice");
+  }
+
+  function selectWaterStage(nextIndex: number) {
+    setWaterStageIndex(Math.max(0, Math.min(waterStages.length - 1, nextIndex)));
+    setActiveLayer("water");
+  }
+
+  function selectResource(nextIndex: number) {
+    setResourceIndex(Math.max(0, Math.min(herbs.length - 1, nextIndex)));
+    setActiveLayer("herbs");
+  }
+
+  function stepExhibit(direction: -1 | 1) {
+    if (exhibitModule === "tour") goToChapter(tourIndex + direction);
+    if (exhibitModule === "field") selectTimelineEvent(timelineIndex + direction);
+    if (exhibitModule === "water") selectWaterStage(waterStageIndex + direction);
+    if (exhibitModule === "resources" && resourceView === "specimen") selectResource(resourceIndex + direction);
+    if (exhibitModule === "resources" && resourceView === "relations") setRelationshipIndex((value) => Math.max(0, Math.min(relationshipEdges.length - 1, value + direction)));
+  }
+
+  function activateMapPoint(pointId: string) {
+    if (!tourMode) { setSelectedId(pointId); return; }
+    if (exhibitModule === "field") {
+      const eventIndex = filteredTimelineEvents.findIndex((event) => event.storyPointId === pointId);
+      if (eventIndex >= 0) selectTimelineEvent(eventIndex);
+      return;
+    }
+    if (exhibitModule === "water") {
+      const stageIndex = waterStages.findIndex((stage) => stage.pointId === pointId);
+      if (stageIndex >= 0) selectWaterStage(stageIndex);
+      return;
+    }
+    if (exhibitModule === "resources") {
+      const herbIndex = herbs.findIndex((herb) => herb.mapPointId === pointId);
+      if (herbIndex >= 0) selectResource(herbIndex);
+      return;
+    }
+    const chapterIndex = tourChapters.findIndex((item) => item.pointIds.includes(pointId));
+    if (chapterIndex >= 0) goToChapter(chapterIndex);
+  }
+
+  function activateRelationshipPoint(pointId: string) {
+    const point = storyPointById.get(pointId);
+    if (!point) return;
+    setActiveLayer(point.layer);
+    mapInstance.current?.easeTo({ center: point.coordinates, zoom: 9.2, pitch: 44, duration: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 650 });
+  }
+
+  function onExhibitTouchStart(event: React.TouchEvent) {
+    touchStartX.current = event.changedTouches[0]?.clientX ?? null;
+  }
+
+  function onExhibitTouchEnd(event: React.TouchEvent) {
+    if (touchStartX.current === null) return;
+    const delta = (event.changedTouches[0]?.clientX ?? touchStartX.current) - touchStartX.current;
+    touchStartX.current = null;
+    if (Math.abs(delta) > 56) stepExhibit(delta < 0 ? 1 : -1);
   }
 
   function resetMap() {
@@ -314,8 +473,8 @@ export function Experience() {
           <h1>在沙与水之间，<br />读懂一座绿洲。</h1>
           <p className="hero-lead">民勤生态治理背景下中医药资源利用与“一带一路”绿色传播实践</p>
           <div className="hero-actions">
-            <button className="primary-action" onClick={startTour}>开始5分钟导览 <span>→</span></button>
-            <button className="secondary-action" onClick={enterMap}>自由探索地图</button>
+            <button className="primary-action" onClick={startTour}>进入数字展框 <span>→</span></button>
+            <button className="secondary-action" onClick={enterMap}>自由浏览</button>
             <span className="team-label">北京中医药大学生命科学学院<br />绿洲药韵·丝路智传实践团</span>
           </div>
         </div>
@@ -376,7 +535,7 @@ export function Experience() {
           {mapFallback && (
             <div className="fallback-map" role="img" aria-label="底图文件失败时的民勤示意沙盘">
               <div className="fallback-sand sand-a" /><div className="fallback-sand sand-b" /><div className="fallback-oasis">民勤故事仍可浏览</div><div className="fallback-water">石羊河水脉</div>
-              {activePoints.slice(0, 3).map((point, index) => <button key={point.id} className={`fallback-node node-${index + 1}`} onClick={() => setSelectedId(point.id)}><span>{String(index + 1).padStart(2, "0")}</span>{point.title}</button>)}
+              {activePoints.slice(0, 3).map((point, index) => <button key={point.id} className={`fallback-node node-${index + 1}`} onClick={() => activateMapPoint(point.id)}><span>{String(index + 1).padStart(2, "0")}</span>{point.title}</button>)}
               <p>地图文件未能读取，已切换为本地示意沙盘；文字、影像和资料来源不受影响。</p>
             </div>
           )}
@@ -385,7 +544,7 @@ export function Experience() {
             <strong>图例与定位精度</strong><span><i className="legend-field" />团队实践</span><span><i className="legend-reference" />公开资料</span><span><i className="legend-approx" />县域 / 村级近似</span><small>虚线：叙事路径，非导航路线</small>
           </div>
           <div className="point-list" aria-label="当前图层全部点位">
-            {activePoints.map((point, index) => <button key={point.id} onClick={() => setSelectedId(point.id)} className={selectedId === point.id ? "selected" : ""}><span>{String(index + 1).padStart(2, "0")}</span><div><strong>{point.title}</strong><small>{point.contentOrigin} · {point.accuracy}</small></div></button>)}
+            {activePoints.map((point, index) => <button key={point.id} onClick={() => activateMapPoint(point.id)} className={selectedId === point.id ? "selected" : ""}><span>{String(index + 1).padStart(2, "0")}</span><div><strong>{point.title}</strong><small>{point.contentOrigin} · {point.accuracy}</small></div></button>)}
           </div>
           <aside className={`story-drawer ${selected ? "open" : ""}`} aria-hidden={!selected} aria-label="地图故事卡">
             {selected && <><button ref={closeButton} className="drawer-close" onClick={closeStory} aria-label="关闭故事卡">×</button><div className="drawer-scroll">
@@ -436,12 +595,54 @@ export function Experience() {
         <div className="footer-note"><p>隐私与医学边界：不展示手机号、学号、邮箱；不使用未经证实采访引语；不作药物疗效宣传。</p><p>版本：首期正式成果 · 更新于 2026.08.07</p></div>
       </footer>
 
-      {tourMode && <aside className="tour-panel" ref={tourPanel} tabIndex={-1} aria-label="五章导览" aria-live="polite">
-        <div className="tour-top"><span>5 MIN GUIDED TOUR</span><button onClick={endTour} aria-label="退出导览">退出 ×</button></div>
-        <div className="tour-progress" aria-label={`第${tourIndex + 1}章，共${tourChapters.length}章`}>{tourChapters.map((item, index) => <button key={item.id} className={index === tourIndex ? "active" : ""} onClick={() => goToChapter(index)} aria-label={`跳至第${index + 1}章 ${item.title}`}><i /></button>)}</div>
-        {chapterMedia && <figure className="tour-media">{chapterMedia.type === "image" ? <img src={chapterMedia.src} alt={chapterMedia.alt} /> : <img src={chapterMedia.poster} alt={chapterMedia.alt} />}<figcaption>{chapterMedia.caption}</figcaption></figure>}
-        <div className="tour-copy"><p>{String(chapter.order).padStart(2, "0")} / {tourChapters.length} · 建议 {formatDuration(chapter.durationSeconds)}</p><span>{chapter.eyebrow}</span><h2>{chapter.title}</h2><p>{chapter.narration}</p><small>关联点位：{chapter.pointIds.map((id) => storyPoints.find((point) => point.id === id)?.title).filter(Boolean).join(" / ")}</small></div>
-        <div className="tour-controls"><button onClick={() => goToChapter(tourIndex - 1)} disabled={tourIndex === 0}>← 上一章</button><span>键盘 ← → 切换 · Esc 退出</span>{tourIndex < tourChapters.length - 1 ? <button onClick={() => goToChapter(tourIndex + 1)}>下一章 →</button> : <button onClick={endTour}>完成导览 ✓</button>}</div>
+      {tourMode && <aside className="tour-panel exhibit-panel" ref={tourPanel} tabIndex={-1} aria-label="数字展框" aria-live="polite" onTouchStart={onExhibitTouchStart} onTouchEnd={onExhibitTouchEnd}>
+        <div className="tour-top"><span>MINQIN DIGITAL EXHIBIT · 首期正式成果</span><button onClick={endTour} aria-label="退出数字展框">退出 ×</button></div>
+        <div className="exhibit-modules" role="tablist" aria-label="展框模块">
+          {exhibitModuleMeta.map((item) => <button key={item.id} role="tab" aria-selected={exhibitModule === item.id} className={exhibitModule === item.id ? "active" : ""} onClick={() => selectExhibitModule(item.id)}><strong>{item.label}</strong><small>{item.en}</small></button>)}
+        </div>
+
+        <div className={`exhibit-stage module-${exhibitModule}`}>
+          {exhibitModule === "tour" && <>
+            {chapterMedia && <figure className="tour-media">{chapterMedia.type === "image" ? <img src={chapterMedia.src} alt={chapterMedia.alt} /> : <img src={chapterMedia.poster} alt={chapterMedia.alt} />}<figcaption>{chapterMedia.caption}</figcaption></figure>}
+            <div className="tour-copy"><p>{String(chapter.order).padStart(2, "0")} / {tourChapters.length} · 建议 {formatDuration(chapter.durationSeconds)}</p><span>{chapter.eyebrow}</span><h2>{chapter.title}</h2><p>{chapter.narration}</p><small>关联点位：{chapter.pointIds.map((id) => storyPointById.get(id)?.title).filter(Boolean).join(" / ")}</small></div>
+          </>}
+
+          {exhibitModule === "field" && <div className="field-player">
+            <div className="exhibit-heading"><p>TWO-DAY FIELD PLAYER</p><h2>两日实践轨迹</h2><span>按原始素材时间组织；无 GPS 内容不生成虚假移动轨迹。</span></div>
+            <div className="timeline-days" role="tablist" aria-label="实践日期">{(["2026-08-03", "2026-08-04"] as const).map((day) => <button key={day} role="tab" aria-selected={timelineDay === day} className={timelineDay === day ? "active" : ""} onClick={() => { setTimelineDay(day); setTimelineCategory("全部"); setTimelineIndex(0); }}>{day === "2026-08-03" ? "8月3日 · 进入民勤" : "8月4日 · 公益林养护"}</button>)}</div>
+            <div className="timeline-filters" aria-label="素材类别筛选">{(["全部", "旅途", "观察", "劳动", "团队记录"] as const).map((category) => { const count = timelineEvents.filter((event) => event.day === timelineDay && (category === "全部" || event.category === category)).length; return <button key={category} disabled={count === 0} className={timelineCategory === category ? "active" : ""} onClick={() => { setTimelineCategory(category); setTimelineIndex(0); }}>{category} · {count}</button>; })}</div>
+            {timelineEvent && timelineMedia && <>
+              <figure className="player-media">{timelineMedia.type === "image" ? <img src={timelineMedia.src} alt={timelineMedia.alt} /> : <video src={timelineMedia.src} poster={timelineMedia.poster} controls preload="metadata" aria-label={timelineMedia.alt}><track kind="captions" src="/media/ambient-zh.vtt" srcLang="zh" label="中文说明" default /></video>}<figcaption><time>{timelineEvent.capturedAt.slice(11)}</time><b>{timelineEvent.category}</b><span>{timelineMedia.caption}</span></figcaption></figure>
+              <div className="event-readout"><strong>{timelinePoint?.title}</strong><span>{timelineEvent.locationAccuracy}</span><p>{timelineEvent.note}</p></div>
+              <label className="timeline-range"><span>{timelineIndex + 1} / {filteredTimelineEvents.length}</span><input aria-label="实践时间进度" type="range" min="0" max={Math.max(0, filteredTimelineEvents.length - 1)} value={Math.min(timelineIndex, Math.max(0, filteredTimelineEvents.length - 1))} onChange={(event) => selectTimelineEvent(Number(event.target.value))} /></label>
+              <div className="event-strip">{filteredTimelineEvents.map((event, index) => { const asset = mediaById.get(event.mediaId); return <button key={event.id} className={index === timelineIndex ? "active" : ""} onClick={() => selectTimelineEvent(index)} aria-label={`跳至 ${event.capturedAt.slice(11)} ${event.note}`}>{asset && <img src={asset.type === "image" ? asset.src : asset.poster} alt="" loading="lazy" />}<time>{event.capturedAt.slice(11)}</time></button>; })}</div>
+            </>}
+          </div>}
+
+          {exhibitModule === "water" && <div className="water-machine">
+            <div className="exhibit-heading"><p>WATER TIMELINE · HISTORICAL SLICES</p><h2>水脉时间机</h2><span>四个历史切片，不是实时监测，也不绘制未经核验的湖面边界。</span></div>
+            <div className="water-years" role="tablist" aria-label="水脉年份">{waterStages.map((stage, index) => <button key={stage.id} role="tab" aria-selected={index === waterStageIndex} className={index === waterStageIndex ? "active" : ""} onClick={() => selectWaterStage(index)}>{stage.year}</button>)}</div>
+            <div className="water-visual" aria-label="水脉关系示意图"><i className={`water-pulse stage-${waterStageIndex + 1}`} /><div><span>红崖山水库</span><b>石羊河下游</b><span>青土湖</span></div><small>关系示意 · 非历史湖面范围</small></div>
+            <div className="water-readout"><time>{waterStage.year}</time><h3>{waterStage.title}</h3><div><strong>{waterStage.metric}</strong><span>{waterStage.unit}</span></div><p>{waterStage.interpretation}</p><small>资料口径：{waterStage.geometryMode === "symbolic" ? "文字资料与关系示意；未使用伪造空间边界" : "权威空间数据"}</small>{waterStage.sourceIds.map((id) => { const source = sourceById.get(id); return source ? <a key={id} href={source.url} target="_blank" rel="noreferrer">{source.publisher} · {source.publishedAt} ↗</a> : null; })}</div>
+            <label className="timeline-range"><span>{waterStage.year}</span><input aria-label="水脉年份进度" type="range" min="0" max={waterStages.length - 1} value={waterStageIndex} onChange={(event) => selectWaterStage(Number(event.target.value))} /></label>
+          </div>}
+
+          {exhibitModule === "resources" && <div className="resource-cabinet">
+            <div className="exhibit-heading"><p>DESERT RESOURCE CABINET</p><h2>药材标本柜</h2><span>只介绍资源、生态和产业关系，不展示医疗功效。</span></div>
+            <div className="resource-view-switch"><button className={resourceView === "specimen" ? "active" : ""} onClick={() => setResourceView("specimen")}>互动标本</button><button className={resourceView === "relations" ? "active" : ""} onClick={() => setResourceView("relations")}>关系演示</button></div>
+            {resourceView === "specimen" ? <>
+              <div className="specimen-tabs" role="tablist" aria-label="药材资源">{herbs.map((herb, index) => <button key={herb.id} role="tab" aria-selected={index === resourceIndex} className={index === resourceIndex ? "active" : ""} onClick={() => selectResource(index)}><span>0{index + 1}</span>{herb.name}</button>)}</div>
+              <article className="specimen-sheet"><div className="specimen-stamp">{selectedResource.evidenceLabel}</div><p>{selectedResource.tag}</p><h3>{selectedResource.name}</h3><em>{selectedResource.latinLabel}</em><div className="resource-sections">{resourceSectionMeta.map((section) => <button key={section.id} className={resourceSection === section.id ? "active" : ""} onClick={() => setResourceSection(section.id)}>{section.label}</button>)}</div><div className="resource-section-copy"><strong>{resourceSectionMeta.find((item) => item.id === resourceSection)?.label}</strong><p>{selectedResource.sections[resourceSection]}</p></div><button className="map-link" onClick={() => activateRelationshipPoint(selectedResource.mapPointId)}>在地图中查看关联节点 →</button></article>
+            </> : <div className="relation-view">
+              <div className="relation-network" aria-label="生态关系演示">{relationshipEdges.map((edge, index) => <button key={edge.id} className={index === relationshipIndex ? "active" : ""} onClick={() => setRelationshipIndex(index)}><span>{storyPointById.get(edge.fromPointId)?.title}</span><b>{edge.label}</b><span>{storyPointById.get(edge.toPointId)?.title}</span></button>)}</div>
+              <article className="relation-detail"><p>关系 {relationshipIndex + 1} / {relationshipEdges.length}</p><h3>{selectedRelationship.label}</h3><p>{selectedRelationship.explanation}</p><div><button onClick={() => activateRelationshipPoint(selectedRelationship.fromPointId)}>定位起点</button><button onClick={() => activateRelationshipPoint(selectedRelationship.toPointId)}>定位终点</button></div></article>
+            </div>}
+          </div>}
+        </div>
+
+        <div className="tour-controls exhibit-controls"><button onClick={() => stepExhibit(-1)} disabled={(exhibitModule === "tour" && tourIndex === 0) || (exhibitModule === "field" && timelineIndex === 0) || (exhibitModule === "water" && waterStageIndex === 0) || (exhibitModule === "resources" && resourceView === "specimen" && resourceIndex === 0) || (exhibitModule === "resources" && resourceView === "relations" && relationshipIndex === 0)}>← 上一个</button><span>键盘 ← → · 左右轻扫 · Esc 退出</span><button onClick={() => stepExhibit(1)}>下一个 →</button></div>
+        {exhibitModule === "tour" && <div className="exhibit-rail" aria-label={`第${tourIndex + 1}章，共${tourChapters.length}章`}>{tourChapters.map((item, index) => <button key={item.id} className={index === tourIndex ? "active" : ""} onClick={() => goToChapter(index)} aria-label={`跳至第${index + 1}章 ${item.title}`}><i>{String(index + 1).padStart(2, "0")}</i><span>{item.title}</span></button>)}</div>}
+        <button className="restart-exhibit" onClick={() => { setTourIndex(0); setTimelineIndex(0); setWaterStageIndex(0); setResourceIndex(0); setRelationshipIndex(0); selectExhibitModule("tour"); }}>重新开始</button>
       </aside>}
     </main>
   );
