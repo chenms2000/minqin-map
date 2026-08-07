@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Experience } from "./experience";
+import { Experience } from "./components/experience/experience";
 
 export const metadata: Metadata = {
   title: "民勤中医药生态文化数字地图",

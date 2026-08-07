@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import "maplibre-gl/dist/maplibre-gl.css";
-import "./globals.css";
+import "./styles/base.css";
+import "./styles/page.css";
+import "./styles/map.css";
+import "./styles/exhibit.css";
+import "./styles/responsive.css";
 
 export async function generateMetadata(): Promise<Metadata> {
   const requestHeaders = await headers();

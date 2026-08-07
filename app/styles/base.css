@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+:root {
+  --ink: #172018;
+  --ink-soft: #536055;
+  --paper: #f4f0e6;
+  --sand: #d7b46a;
+  --sand-light: #ead9b4;
+  --oasis: #2f7658;
+  --oasis-dark: #183d30;
+  --water: #228aa1;
+  --flag: #c63e32;
+  --line: rgba(23, 32, 24, 0.15);
+  --serif: "Songti SC", "STSong", "Noto Serif CJK SC", "SimSun", serif;
+  --sans: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; background: var(--paper); }
+body { margin: 0; color: var(--ink); background: var(--paper); font-family: var(--sans); }
+button, a, video { -webkit-tap-highlight-color: transparent; }
+button { font: inherit; }
+a { color: inherit; }
+img, video { display: block; max-width: 100%; }
+
+::selection { background: var(--flag); color: #fff; }
+
