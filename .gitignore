@@ -20,7 +20,21 @@
 
 # misc
 .DS_Store
+Thumbs.db
+Desktop.ini
 *.pem
+*.key
+*.p12
+*.pfx
+
+# local caches and temporary files
+.eslintcache
+*.tsbuildinfo
+.cache/
+/tmp/
+/temp/
+*.tmp
+*.temp
 
 # debug
 npm-debug.log*
