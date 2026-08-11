@@ -29,7 +29,7 @@ export const contextLabels = [
 
 export const practiceRoute: FeatureCollection<LineString> = {
   type: "FeatureCollection",
-  features: [{ type: "Feature", properties: { note: "叙事路径，非导航路线" }, geometry: { type: "LineString", coordinates: [[102.6378, 37.9283], [102.92, 38.24], [103.0938, 38.6247], [103.59, 38.88]] } }],
+  features: [{ type: "Feature", properties: { note: "叙事路径，非导航路线" }, geometry: { type: "LineString", coordinates: [[102.6378, 37.9283], [102.92, 38.24], [103.0938, 38.6247], [103.500018, 38.73236]] } }],
 };
 
 export const waterRoute: FeatureCollection<LineString> = {

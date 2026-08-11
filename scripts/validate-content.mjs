@@ -9,6 +9,7 @@ const dataFiles = [
   "story-points.ts",
   "resources.ts",
   "field-timeline.ts",
+  "field-tracks.ts",
   "water-stages.ts",
   "exhibit-scenes.ts",
 ];
@@ -67,7 +68,8 @@ for (const [longitude, latitude] of coordinates) {
 }
 
 const expectedCounts = [
-  ["field-timeline.ts", /\bid:\s*"event-/g, 20, "实践时间线"],
+  ["field-timeline.ts", /\bid:\s*"event-/g, 43, "实践时间线"],
+  ["field-tracks.ts", /\bid:\s*"track-/g, 2, "GPS采样线"],
   ["water-stages.ts", /\bid:\s*"water-/g, 4, "水脉阶段"],
   ["resources.ts", /\bid:\s*"relation-/g, 4, "关系边"],
 ];
@@ -76,7 +78,18 @@ for (const [file, pattern, expected, label] of expectedCounts) {
   if (actual !== expected) throw new Error(`${label}应为 ${expected} 项，当前为 ${actual} 项`);
 }
 const featuredCount = [...(contentByFile.get("media.ts") ?? "").matchAll(/featured:\s*true/g)].length;
-if (featuredCount !== 10) throw new Error(`导览精选媒体应为 10 项，当前为 ${featuredCount} 项`);
+if (mediaIds.size !== 43) throw new Error(`媒体条目应为 43 项，当前为 ${mediaIds.size} 项`);
+if (featuredCount !== 18) throw new Error(`导览精选媒体应为 18 项，当前为 ${featuredCount} 项`);
+
+const trackContent = contentByFile.get("field-tracks.ts") ?? "";
+for (const block of trackContent.split(/\n\s*},\n/).filter((item) => item.includes('id: "track-'))) {
+  const samples = [...block.matchAll(/\[(103\.[\d]+),\s*(38\.[\d]+)\]/g)].map((match) => [Number(match[1]), Number(match[2])]);
+  if (samples.length < 2) throw new Error("GPS采样线至少需要两个坐标样本");
+  for (const [longitude, latitude] of samples) {
+    if (longitude < 102 || longitude > 105 || latitude < 37 || latitude > 40) throw new Error(`GPS采样线坐标越界：[${longitude}, ${latitude}]`);
+  }
+  if (!block.includes("非完整轨迹、非导航路线")) throw new Error("GPS采样线缺少非导航声明");
+}
 
 async function sourceFiles(directory) {
   const found = [];
@@ -96,7 +109,7 @@ const forbidden = [
   [/用户提供地图位点|精确活动坐标|现场采访称/, "未经核验的定位或采访表述"],
 ];
 for (const [pattern, label] of forbidden) if (pattern.test(publishedText)) throw new Error(`隐私与内容边界检查失败：发现${label}`);
-for (const required of ["收成镇兴隆村", "村级近似定位", "不宣传医疗功效", "非采访引语"]) {
+for (const required of ["收成镇兴隆村", "村级近似定位", "GPS实拍点", "非完整轨迹、非导航路线", "不宣传医疗功效", "非采访引语"]) {
   if (!publishedText.includes(required)) throw new Error(`内容边界说明缺失：${required}`);
 }
 

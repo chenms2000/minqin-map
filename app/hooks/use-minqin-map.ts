@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { AttributionControl, Map as MapLibreMap, Marker, NavigationControl, ScaleControl, addProtocol, removeProtocol } from "maplibre-gl";
+import { AttributionControl, Map as MapLibreMap, Marker, NavigationControl, Popup, ScaleControl, addProtocol, removeProtocol } from "maplibre-gl";
 import { FileSource, PMTiles, Protocol } from "pmtiles";
-import type { StoryLayer, StoryPoint } from "@/content";
+import { fieldTracks, type StoryLayer, type StoryPoint } from "@/content";
 import { accuracyClass } from "@/app/lib/formatters";
 import { contextLabels, defaultView, localArchiveName, localArchivePath, localMapStyle, mapBounds, practiceRoute, waterRoute } from "@/app/lib/map-config";
 
@@ -67,7 +67,7 @@ export function useMinqinMap({ activeLayer, activePoints, onPointActivate }: Use
         protocol.add(archive);
         addProtocol("pmtiles", protocol.tile);
         protocolRegistered = true;
-        map = new MapLibreMap({ container: mapContainer.current, style: localMapStyle(localArchiveName), ...defaultView, attributionControl: false, minZoom: 7.2, maxZoom: 13, maxPitch: 68, maxBounds: mapBounds });
+        map = new MapLibreMap({ container: mapContainer.current, style: localMapStyle(localArchiveName), ...defaultView, attributionControl: false, minZoom: 7.2, maxZoom: 14, maxPitch: 68, maxBounds: mapBounds });
         mapInstance.current = map;
         map.addControl(new NavigationControl({ visualizePitch: true }), "bottom-right");
         map.addControl(new ScaleControl({ maxWidth: 110, unit: "metric" }), "bottom-left");
@@ -80,6 +80,25 @@ export function useMinqinMap({ activeLayer, activePoints, onPointActivate }: Use
           setMapProgress(100);
           map.addSource("practice-route", { type: "geojson", data: practiceRoute });
           map.addLayer({ id: "practice-route-line", type: "line", source: "practice-route", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#d95c3d", "line-width": 3, "line-opacity": 0.78, "line-dasharray": [1, 1.8] } });
+          fieldTracks.forEach((track) => {
+            const sourceId = `field-track-${track.id}`;
+            const layerId = `${sourceId}-line`;
+            map?.addSource(sourceId, { type: "geojson", data: { type: "Feature", properties: { label: track.label, notice: track.notice }, geometry: { type: "LineString", coordinates: track.coordinates } } });
+            map?.addLayer({ id: layerId, type: "line", source: sourceId, layout: { visibility: "visible", "line-cap": "round", "line-join": "round" }, paint: { "line-color": track.color, "line-width": 4, "line-opacity": 0.9, "line-dasharray": [0.25, 1.15] } });
+            map?.on("mouseenter", layerId, () => { if (map) map.getCanvas().style.cursor = "pointer"; });
+            map?.on("mouseleave", layerId, () => { if (map) map.getCanvas().style.cursor = ""; });
+            map?.on("click", layerId, (event) => {
+              if (!map) return;
+              const content = document.createElement("div");
+              const title = document.createElement("strong");
+              const note = document.createElement("small");
+              title.textContent = track.label;
+              note.textContent = track.notice;
+              content.className = "track-popup";
+              content.append(title, note);
+              new Popup({ closeButton: false, offset: 8 }).setLngLat(event.lngLat).setDOMContent(content).addTo(map);
+            });
+          });
           map.addSource("water-route", { type: "geojson", data: waterRoute });
           map.addLayer({ id: "water-route-line", type: "line", source: "water-route", layout: { visibility: "none", "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#228aa1", "line-width": 5, "line-opacity": 0.8 } });
           setMapReady(true);
@@ -130,6 +149,10 @@ export function useMinqinMap({ activeLayer, activePoints, onPointActivate }: Use
     });
     if (map.loaded()) {
       map.setLayoutProperty("practice-route-line", "visibility", activeLayer === "practice" ? "visible" : "none");
+      fieldTracks.forEach((track) => {
+        const layerId = `field-track-${track.id}-line`;
+        if (map.getLayer(layerId)) map.setLayoutProperty(layerId, "visibility", activeLayer === "practice" ? "visible" : "none");
+      });
       map.setLayoutProperty("water-route-line", "visibility", activeLayer === "water" ? "visible" : "none");
     }
   }, [activeLayer, activePoints, mapReady]);

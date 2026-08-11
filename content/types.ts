@@ -1,7 +1,7 @@
 export type StoryLayer = "practice" | "water" | "herbs" | "people";
 export type ContentOrigin = "团队实践" | "公开资料" | "项目计划";
 export type EvidenceStatus = "团队影像记录" | "公开资料可核" | "项目计划关注";
-export type LocationAccuracy = "县域叙事点" | "村级近似定位" | "公开知识点";
+export type LocationAccuracy = "县域叙事点" | "村级近似定位" | "公开知识点" | "GPS实拍点";
 
 export type SourceRef = {
   id: string;
@@ -19,6 +19,7 @@ export type MediaAsset = {
   alt: string;
   caption: string;
   capturedAt: string;
+  timeLabel?: string;
   featured: boolean;
 };
 
@@ -74,17 +75,29 @@ export type ExhibitScene = {
 
 export type TourChapter = ExhibitScene;
 
-export type TimelineCategory = "旅途" | "观察" | "劳动" | "团队记录";
+export type TimelineCategory = "旅途" | "观察" | "科普" | "传播" | "劳动" | "团队记录";
 
 export type TimelineEvent = {
   id: string;
   capturedAt: string;
+  timeLabel?: string;
   day: "2026-08-03" | "2026-08-04";
   category: TimelineCategory;
   storyPointId: string;
   mediaId: string;
   locationAccuracy: LocationAccuracy;
   note: string;
+};
+
+export type FieldTrack = {
+  id: string;
+  label: string;
+  day: "2026-08-03" | "2026-08-04";
+  storyPointId: string;
+  coordinates: [number, number][];
+  locationAccuracy: "GPS采样线";
+  notice: string;
+  color: string;
 };
 
 export type WaterStage = {
@@ -107,4 +120,3 @@ export type RelationshipEdge = {
   label: string;
   explanation: string;
 };
-

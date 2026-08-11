@@ -11,7 +11,7 @@ async function render(pathname = "/") {
   return worker.fetch(new Request(`http://localhost${pathname}`, { headers: { accept: "text/html", host: "localhost" } }), { ASSETS: { fetch: async () => new Response("Not found", { status: 404 }) } }, { waitUntil() {}, passThroughOnException() {} });
 }
 
-const contentFiles = ["types.ts", "sources.ts", "media.ts", "story-points.ts", "field-timeline.ts", "water-stages.ts", "resources.ts", "exhibit-scenes.ts", "index.ts"];
+const contentFiles = ["types.ts", "sources.ts", "media.ts", "story-points.ts", "field-timeline.ts", "field-tracks.ts", "water-stages.ts", "resources.ts", "exhibit-scenes.ts", "index.ts"];
 const componentFiles = [
   "components/experience/experience.tsx",
   "components/map/interactive-map.tsx",
@@ -41,7 +41,7 @@ test("keeps content, map, exhibit and page responsibilities separated", async ()
   const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
   assert.match(page, /components\/experience\/experience/);
   const index = await readFile(new URL("../content/index.ts", import.meta.url), "utf8");
-  for (const moduleName of ["sources", "media", "story-points", "field-timeline", "water-stages", "resources", "exhibit-scenes"]) assert.match(index, new RegExp(`\\./${moduleName}`));
+  for (const moduleName of ["sources", "media", "story-points", "field-timeline", "field-tracks", "water-stages", "resources", "exhibit-scenes"]) assert.match(index, new RegExp(`\\./${moduleName}`));
 });
 
 test("ships curated dated media, local map and social card", async () => {
@@ -72,12 +72,15 @@ test("structured datasets retain the expected formal-release counts", async () =
   const water = await readFile(new URL("../content/water-stages.ts", import.meta.url), "utf8");
   const resources = await readFile(new URL("../content/resources.ts", import.meta.url), "utf8");
   const scenes = await readFile(new URL("../content/exhibit-scenes.ts", import.meta.url), "utf8");
-  assert.equal([...timeline.matchAll(/id: "event-/g)].length, 20);
+  const tracks = await readFile(new URL("../content/field-tracks.ts", import.meta.url), "utf8");
+  assert.equal([...timeline.matchAll(/id: "event-/g)].length, 43);
+  assert.equal([...tracks.matchAll(/id: "track-/g)].length, 2);
   assert.equal([...water.matchAll(/id: "water-/g)].length, 4);
   assert.equal([...resources.matchAll(/id: "relation-/g)].length, 4);
   assert.equal([...resources.matchAll(/mapPointId: /g)].length, 4);
   assert.equal([...scenes.matchAll(/id: /g)].length, 5);
-  assert.equal([...media.matchAll(/featured: true/g)].length, 10);
+  assert.equal([...media.matchAll(/featured: true/g)].length, 18);
+  assert.equal([...media.matchAll(/\{ id: /g)].length, 43);
 });
 
 test("map archive is a lightweight valid PMTiles package", async () => {

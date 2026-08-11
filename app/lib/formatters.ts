@@ -1,6 +1,7 @@
 export function accuracyClass(accuracy: string) {
   if (accuracy === "公开知识点") return "knowledge";
   if (accuracy === "县域叙事点") return "county";
+  if (accuracy === "GPS实拍点") return "confirmed";
   return "approximate";
 }
 

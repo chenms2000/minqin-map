@@ -33,6 +33,7 @@ site/
 | `media.ts` | 站内媒体索引、字幕、拍摄时间及精选状态。 |
 | `story-points.ts` | 地图点位、定位精度、内容来源和关联媒体。 |
 | `field-timeline.ts` | 8月3—4日实践轨迹事件。 |
+| `field-tracks.ts` | 由影像 EXIF 整理的 GPS 采样线及非导航声明。 |
 | `water-stages.ts` | 水脉历史时间线和四个阶段。 |
 | `resources.ts` | 药材档案与生态关系边。 |
 | `exhibit-scenes.ts` | 五章导览镜头、讲解和主媒体。 |

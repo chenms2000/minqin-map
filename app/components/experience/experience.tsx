@@ -68,7 +68,7 @@ export function Experience() {
     previousFocus.current = document.activeElement as HTMLElement;
     closeButton.current?.focus();
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    mapInstance.current?.easeTo({ center: selected.coordinates, zoom: selected.layer === "water" ? 8.6 : 9.3, duration: reduced ? 0 : 800, offset: window.innerWidth < 680 ? [0, -120] : [-150, 0] });
+    mapInstance.current?.easeTo({ center: selected.coordinates, zoom: selected.layer === "water" ? 8.6 : selected.accuracy === "GPS实拍点" ? 13.15 : 9.3, duration: reduced ? 0 : 800, offset: window.innerWidth < 680 ? [0, -120] : [-150, 0] });
     const onKeyDown = (event: KeyboardEvent) => { if (event.key === "Escape") closeStory(); };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
@@ -82,7 +82,7 @@ export function Experience() {
     const timer = window.setTimeout(() => {
       mapInstance.current?.resize();
       if (exhibitModule === "tour") mapInstance.current?.easeTo({ ...chapter.mapView, duration: reduced ? 0 : 850 });
-      if (exhibitModule === "field" && timelinePoint) mapInstance.current?.easeTo({ center: timelinePoint.coordinates, zoom: 9.5, pitch: 48, bearing: -8, duration: reduced ? 0 : 700 });
+      if (exhibitModule === "field" && timelinePoint) mapInstance.current?.easeTo({ center: timelinePoint.coordinates, zoom: timelinePoint.accuracy === "GPS实拍点" ? 13.15 : 9.5, pitch: 48, bearing: -8, duration: reduced ? 0 : 700 });
       if (exhibitModule === "water") mapInstance.current?.easeTo({ ...waterStage.mapView, duration: reduced ? 0 : 800 });
       if (exhibitModule === "resources" && selectedResourcePoint) mapInstance.current?.easeTo({ center: selectedResourcePoint.coordinates, zoom: 9.25, pitch: 44, bearing: -7, duration: reduced ? 0 : 700 });
       tourPanel.current?.focus();
@@ -170,5 +170,4 @@ export function Experience() {
     {tourMode && <DigitalExhibit panelRef={tourPanel} module={exhibitModule} tourIndex={tourIndex} timelineDay={timelineDay} timelineCategory={timelineCategory} timelineIndex={timelineIndex} waterStageIndex={waterStageIndex} resourceIndex={resourceIndex} resourceSection={resourceSection} resourceView={resourceView} relationshipIndex={relationshipIndex} onEnd={endTour} onSelectModule={selectExhibitModule} onGoChapter={goToChapter} onSetTimelineDay={(day) => { setTimelineDay(day); setTimelineCategory("全部"); setTimelineIndex(0); }} onSetTimelineCategory={(category) => { setTimelineCategory(category); setTimelineIndex(0); }} onSelectTimelineEvent={selectTimelineEvent} onSelectWaterStage={selectWaterStage} onSelectResource={selectResource} onSetResourceSection={setResourceSection} onSetResourceView={setResourceView} onSetRelationshipIndex={setRelationshipIndex} onActivateRelationshipPoint={activateRelationshipPoint} onStep={stepExhibit} onRestart={() => { setTourIndex(0); setTimelineIndex(0); setWaterStageIndex(0); setResourceIndex(0); setRelationshipIndex(0); selectExhibitModule("tour"); }} />}
   </main>;
 }
-
 
