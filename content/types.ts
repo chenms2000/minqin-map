@@ -29,6 +29,18 @@ export type ChapterEvidence = {
   mediaIds: string[];
 };
 
+export type TourFrame = {
+  id: string;
+  kind: "intro" | "point" | "media" | "source";
+  eyebrow: string;
+  title: string;
+  body: string;
+  mediaId?: string;
+  pointId?: string;
+  sourceId?: string;
+  durationSeconds: number;
+};
+
 export type MediaAsset = {
   id: string;
   type: "image" | "video";
@@ -39,6 +51,7 @@ export type MediaAsset = {
   capturedAt: string;
   timeLabel?: string;
   featured: boolean;
+  durationSeconds?: number;
 };
 
 export type StoryPoint = {
@@ -92,7 +105,6 @@ export type ExhibitScene = {
   order: number;
   title: string;
   eyebrow: string;
-  durationSeconds: number;
   layer: StoryLayer;
   mapView: { center: [number, number]; zoom: number; pitch: number; bearing: number };
   pointIds: string[];

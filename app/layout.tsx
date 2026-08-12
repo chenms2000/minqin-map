@@ -18,7 +18,7 @@ export async function generateMetadata(): Promise<Metadata> {
     icons: { icon: "/favicon.png", shortcut: "/favicon.png" },
     openGraph: {
       title: "民勤中医药生态文化数字地图｜2026暑期实践数字成果",
-      description: "在沙与水之间，读懂一座绿洲。一键5分钟导览、证据索引、实践影像与本地离线地图。",
+      description: "在沙与水之间，读懂一座绿洲。自动导览、证据索引、实践影像与本地离线地图。",
       type: "website",
       locale: "zh_CN",
       images: [{ url: socialImage, width: 1200, height: 630, alt: "民勤中医药生态文化数字地图分享封面" }],

@@ -168,8 +168,9 @@
   .tour-top { padding: 8px 12px 6px; }
   .exhibit-modules button { padding: 8px 6px; }
   .exhibit-modules small { display: none; }
-  .module-tour { grid-template-rows: 0 1fr; }
-  .tour-media { visibility: hidden; }
+  .module-tour { grid-template-rows: minmax(120px,20vh) minmax(0,1fr); }
+  .module-tour.tour-text-frame { grid-template-rows: 1fr; }
+  .tour-media { visibility: visible; }
   .tour-copy { padding: 16px 20px; overflow-y: auto; }
   .tour-copy h2 { font-size: 40px; }
   .exhibit-heading { padding: 12px 16px 8px; }

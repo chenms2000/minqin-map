@@ -27,6 +27,9 @@ const allDefinitions = entries.flatMap(([name, text]) => idsIn(text).map((id) =>
 if (sourceIds.size < 16) throw new Error(`公开来源至少需要 16 项，当前为 ${sourceIds.size} 项`);
 for (const line of (contentByFile.get("sources.ts") ?? "").split("\n").filter((item) => item.includes('{ id: "'))) {
   for (const field of ["kind", "topics", "summary"]) if (!line.includes(`${field}:`)) throw new Error(`来源元数据缺失 ${field}：${line.match(/id: "([^"]+)"/)?.[1] ?? "unknown"}`);
+  const summary = line.match(/summary:\s*"([^"]+)"/)?.[1] ?? "";
+  if (summary.length < 45) throw new Error(`来源摘要过短：${line.match(/id: "([^"]+)"/)?.[1] ?? "unknown"}`);
+  if (summary.startsWith("支撑")) throw new Error(`来源摘要不应使用内部审核语气：${line.match(/id: "([^"]+)"/)?.[1] ?? "unknown"}`);
 }
 
 const duplicates = allDefinitions.filter((item, index) => allDefinitions.findIndex((candidate) => candidate.id === item.id) !== index);
@@ -89,6 +92,9 @@ for (const [file, pattern, expected, label] of expectedCounts) {
 const featuredCount = [...(contentByFile.get("media.ts") ?? "").matchAll(/featured:\s*true/g)].length;
 if (mediaIds.size !== 43) throw new Error(`媒体条目应为 43 项，当前为 ${mediaIds.size} 项`);
 if (featuredCount !== 18) throw new Error(`导览精选媒体应为 18 项，当前为 ${featuredCount} 项`);
+for (const line of (contentByFile.get("media.ts") ?? "").split("\n").filter((item) => item.includes('type: "video"'))) {
+  if (!/durationSeconds:\s*[\d.]+/.test(line)) throw new Error(`视频缺少真实时长：${line.match(/id: "([^"]+)"/)?.[1] ?? "unknown"}`);
+}
 
 const trackContent = contentByFile.get("field-tracks.ts") ?? "";
 for (const block of trackContent.split(/\n\s*},\n/).filter((item) => item.includes('id: "track-'))) {
@@ -124,7 +130,9 @@ for (const required of ["收成镇兴隆村", "村级近似定位", "GPS实拍�
 const storyPointContent = contentByFile.get("story-points.ts") ?? "";
 if (!/boundary:\s*"[^"]*(?:医学|诊断|治疗|用药)[^"]*"/.test(storyPointContent)) throw new Error("内容边界说明缺失：医学活动边界");
 if (!/boundary:\s*"[^"]*(?:隐私|账号|订单|销量)[^"]*"/.test(storyPointContent)) throw new Error("内容边界说明缺失：平台隐私边界");
-if (!/白刺果[^"\n]*待专业核验|名称待专业核验/.test(publishedText)) throw new Error("内容边界说明缺失：白刺果待专业核验");
+if (/白刺果[^"\n]*(?:待专业核验|待核验)|名称待专业核验/.test(publishedText)) throw new Error("白刺果已确认，不应继续显示待核验表述");
+if (!publishedText.includes('title: "白刺果采摘观察"')) throw new Error("白刺果确认名称缺失");
+if (!publishedText.includes("哈密瓜")) throw new Error("直播农产品应标记为哈密瓜");
 if (!publishedText.includes("项目计划关注")) throw new Error("内容边界说明缺失：项目计划与已完成事实区分");
 
 const archive = path.join(root, "public", "maps", "minqin-2026.pmtiles");

@@ -39,7 +39,7 @@ test("server-renders the five-chapter homepage story spine", async () => {
   for (const id of ["hexi-entry", "water-oasis", "field-days", "science-industry", "youth-guardians"]) assert.match(html, new RegExp(`data-chapter="${id}"`));
   assert.equal((html.match(/data-chapter=/g) ?? []).length, 5);
   assert.equal((html.match(/进入这一章/g) ?? []).length, 5);
-  for (const action of ["开始 5 分钟导览", "进入数字展框", "自由浏览"]) assert.match(html, new RegExp(action));
+  for (const action of ["开始自动导览", "进入数字展框", "自由浏览"]) assert.match(html, new RegExp(action));
   for (const archiveLabel of ["项目档案", "完整实践影像", "水脉历史切片", "药材资料", "资料与方法说明"]) assert.match(html, new RegExp(archiveLabel));
 
   const longForm = await readFile(new URL("../app/components/sections/long-form-page.tsx", import.meta.url), "utf8");
@@ -147,15 +147,18 @@ test("local map style establishes land and road hierarchy", async () => {
   assert.match(hook, /"line-width": 2\.2/);
 });
 
-test("guided tour uses the five chapter durations as its single playback timeline", async () => {
+test("guided tour derives its timeline from unique frame media durations", async () => {
   const experience = await readFile(new URL("../app/components/experience/experience.tsx", import.meta.url), "utf8");
   const exhibit = await readFile(new URL("../app/components/exhibit/digital-exhibit.tsx", import.meta.url), "utf8");
-  const scenes = await readFile(new URL("../content/exhibit-scenes.ts", import.meta.url), "utf8");
-  const durations = [...scenes.matchAll(/durationSeconds: (\d+)/g)].map((match) => Number(match[1]));
-  assert.deepEqual(durations, [45, 50, 90, 60, 55]);
-  assert.equal(durations.reduce((total, duration) => total + duration, 0), 300);
+  const evidence = await readFile(new URL("../content/evidence-index.ts", import.meta.url), "utf8");
+  assert.match(evidence, /TEXT_FRAME_SECONDS = 4/);
+  assert.match(evidence, /SOURCE_FRAME_SECONDS = 7/);
+  assert.match(evidence, /IMAGE_FRAME_SECONDS = 12/);
+  assert.match(evidence, /asset\.durationSeconds/);
+  assert.match(evidence, /usedTourMediaIds/);
   assert.match(experience, /"idle" \| "playing" \| "paused" \| "completed"/);
-  assert.match(experience, /tourChapters\[tourIndex\]\.durationSeconds \* 1000/);
+  assert.match(experience, /frame\.durationSeconds/);
+  assert.match(experience, /}, 250\)/);
   assert.match(experience, /setTourPlayback\("completed"\)/);
   for (const label of ["自动播放", "暂停", "继续", "五章导览已完成"]) assert.match(exhibit, new RegExp(label));
 });
@@ -163,13 +166,11 @@ test("guided tour uses the five chapter durations as its single playback timelin
 test("derives bidirectional chapter and source evidence indexes", async () => {
   const evidence = await readFile(new URL("../content/evidence-index.ts", import.meta.url), "utf8");
   const index = await readFile(new URL("../content/index.ts", import.meta.url), "utf8");
-  const exhibit = await readFile(new URL("../app/components/exhibit/digital-exhibit.tsx", import.meta.url), "utf8");
   const page = await readFile(new URL("../app/components/sections/long-form-page.tsx", import.meta.url), "utf8");
   assert.match(evidence, /chapterEvidenceById/);
   assert.match(evidence, /sourceUsageById/);
   for (const collection of ["tourChapters", "storyPoints", "waterStages", "herbs"]) assert.match(evidence, new RegExp(`for \\(const .* of ${collection}\\)|${collection}\\.(?:map|filter)`));
   assert.match(index, /evidence-index/);
-  assert.match(exhibit, /本章依据 · EVIDENCE/);
   assert.match(page, /资料来源与反向索引/);
   assert.match(page, /支撑：/);
 });
@@ -179,12 +180,36 @@ test("homepage starts continuous playback and exposes a complete keyboard and ex
   const exhibit = await readFile(new URL("../app/components/exhibit/digital-exhibit.tsx", import.meta.url), "utf8");
   const page = await readFile(new URL("../app/components/sections/long-form-page.tsx", import.meta.url), "utf8");
   assert.match(page, /onStartExhibit\(0, true\)/);
-  assert.match(page, /开始 5 分钟导览/);
+  assert.match(page, /开始自动导览/);
   assert.match(experience, /event\.code === "Space"/);
   assert.match(experience, /window\.setInterval/);
   assert.match(experience, /totalTourSeconds/);
   assert.match(exhibit, /tour-total-progress/);
   for (const action of ["自由探索地图", "查看资料依据"]) assert.match(exhibit, new RegExp(action));
+});
+
+test("continuous tour rotates map points, media, video and source text as derived frames", async () => {
+  const evidence = await readFile(new URL("../content/evidence-index.ts", import.meta.url), "utf8");
+  const experience = await readFile(new URL("../app/components/experience/experience.tsx", import.meta.url), "utf8");
+  const exhibit = await readFile(new URL("../app/components/exhibit/digital-exhibit.tsx", import.meta.url), "utf8");
+  assert.match(evidence, /chapterFramesById/);
+  for (const kind of ["intro", "point", "media", "source"]) assert.match(evidence, new RegExp(`kind: "${kind}"`));
+  assert.match(evidence, /asset\.type !== "video"/);
+  assert.match(experience, /activeTourFrameIndex/);
+  assert.match(evidence, /claimTourMedia/);
+  assert.match(experience, /activeTourPoint\.coordinates/);
+  assert.match(exhibit, /autoPlay=\{playback === "playing"\}/);
+  assert.match(exhibit, /muted playsInline preload/);
+  assert.doesNotMatch(exhibit, /playsInline loop/);
+  assert.doesNotMatch(exhibit, /见视频下方文字|自动分镜 · AUTO STORYBOARD/);
+});
+
+test("confirmed field labels use white thorn fruit and Hami melon consistently", async () => {
+  const published = await Promise.all(["story-points.ts", "media.ts", "field-timeline.ts", "exhibit-scenes.ts"].map((name) => readFile(new URL(`../content/${name}`, import.meta.url), "utf8")));
+  const text = published.join("\n");
+  assert.match(text, /白刺果采摘观察/);
+  assert.match(text, /哈密瓜/);
+  assert.doesNotMatch(text, /待专业核验|待核验|当地西瓜|人物与西瓜/);
 });
 
 test("maintenance documentation covers the content workflows", async () => {
