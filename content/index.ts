@@ -7,6 +7,7 @@ export { fieldTracks } from "./field-tracks";
 export { waterTimeline, waterStages } from "./water-stages";
 export { herbs, relationshipEdges } from "./resources";
 export { exhibitScenes, tourChapters } from "./exhibit-scenes";
+export { chapterEvidenceById, sourceUsageById } from "./evidence-index";
 
 import { media } from "./media";
 import { sources } from "./sources";

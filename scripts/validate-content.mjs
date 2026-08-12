@@ -34,11 +34,14 @@ function assertReferences(pattern, knownIds, label) {
   }
 }
 
+const referencedSourceIds = new Set();
 for (const match of allContent.matchAll(/sourceIds:\s*\[([^\]]*)\]/g)) {
   for (const idMatch of match[1].matchAll(/"([^"]+)"/g)) {
     if (!sourceIds.has(idMatch[1])) throw new Error(`来源引用不存在：${idMatch[1]}`);
+    referencedSourceIds.add(idMatch[1]);
   }
 }
+for (const sourceId of sourceIds) if (!referencedSourceIds.has(sourceId)) throw new Error(`来源缺少实际使用关系：${sourceId}`);
 for (const match of allContent.matchAll(/mediaIds:\s*\[([^\]]*)\]/g)) {
   for (const idMatch of match[1].matchAll(/"([^"]+)"/g)) {
     if (!mediaIds.has(idMatch[1])) throw new Error(`媒体引用不存在：${idMatch[1]}`);

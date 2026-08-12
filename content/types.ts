@@ -9,6 +9,24 @@ export type SourceRef = {
   title: string;
   url: string;
   publishedAt: string;
+  kind?: "government" | "research" | "media" | "organization";
+  topics?: string[];
+  summary?: string;
+};
+
+export type EvidenceUsage = {
+  type: "chapter" | "storyPoint" | "waterStage" | "resource";
+  id: string;
+  label: string;
+};
+
+export type ChapterEvidence = {
+  chapterId: string;
+  directSourceIds: string[];
+  pointIds: string[];
+  leadMediaId: string;
+  sourceIds: string[];
+  mediaIds: string[];
 };
 
 export type MediaAsset = {

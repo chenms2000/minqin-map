@@ -3,7 +3,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { useMemo, useRef, type RefObject } from "react";
-import { herbs, mediaById, relationshipEdges, sourceById, storyPointById, timelineCategories, timelineEvents, tourChapters, waterStages, type ResourceSectionKey, type TimelineCategory } from "@/content";
+import { chapterEvidenceById, herbs, mediaById, relationshipEdges, sourceById, storyPointById, timelineCategories, timelineEvents, tourChapters, waterStages, type ResourceSectionKey, type TimelineCategory } from "@/content";
 import { formatDuration } from "@/app/lib/formatters";
 import type { TourPlaybackState } from "@/app/components/experience/experience";
 
@@ -58,6 +58,7 @@ export function DigitalExhibit(props: DigitalExhibitProps) {
   const touchStartX = useRef<number | null>(null);
   const filteredEvents = useMemo(() => timelineEvents.filter((event) => event.day === timelineDay && (timelineCategory === "全部" || event.category === timelineCategory)), [timelineCategory, timelineDay]);
   const chapter = tourChapters[tourIndex];
+  const chapterEvidence = chapterEvidenceById.get(chapter.id);
   const chapterMedia = mediaById.get(chapter.leadMediaId);
   const timelineEvent = filteredEvents[Math.min(timelineIndex, Math.max(0, filteredEvents.length - 1))];
   const timelineMedia = timelineEvent ? mediaById.get(timelineEvent.mediaId) : undefined;
@@ -79,7 +80,7 @@ export function DigitalExhibit(props: DigitalExhibitProps) {
     <div className="exhibit-modules" role="tablist" aria-label="展框模块">{moduleMeta.map((item) => <button key={item.id} role="tab" aria-selected={module === item.id} className={module === item.id ? "active" : ""} onClick={() => props.onSelectModule(item.id)}><strong>{item.label}</strong><small>{item.en}</small></button>)}</div>
 
     <div className={`exhibit-stage module-${module}`}>
-      {module === "tour" && <>{chapterMedia && <figure className="tour-media">{chapterMedia.type === "image" ? <img src={chapterMedia.src} alt={chapterMedia.alt} /> : <img src={chapterMedia.poster} alt={chapterMedia.alt} />}<figcaption>{chapterMedia.caption}</figcaption></figure>}<div className="tour-copy"><p>{String(chapter.order).padStart(2, "0")} / {tourChapters.length} · 建议 {formatDuration(chapter.durationSeconds)}</p><span>{chapter.eyebrow}</span><h2>{chapter.title}</h2><p>{chapter.narration}</p><small>关联点位：{chapter.pointIds.map((id) => storyPointById.get(id)?.title).filter(Boolean).join(" / ")}</small></div></>}
+      {module === "tour" && <>{chapterMedia && <figure className="tour-media">{chapterMedia.type === "image" ? <img src={chapterMedia.src} alt={chapterMedia.alt} /> : <img src={chapterMedia.poster} alt={chapterMedia.alt} />}<figcaption>{chapterMedia.caption}</figcaption></figure>}<div className="tour-copy"><p>{String(chapter.order).padStart(2, "0")} / {tourChapters.length} · 建议 {formatDuration(chapter.durationSeconds)}</p><span>{chapter.eyebrow}</span><h2>{chapter.title}</h2><p>{chapter.narration}</p><small>关联点位：{chapter.pointIds.map((id) => storyPointById.get(id)?.title).filter(Boolean).join(" / ")}</small><div className="chapter-evidence"><strong>本章依据 · EVIDENCE <i>{chapterEvidence?.sourceIds.length ?? 0}</i></strong><div>{chapterEvidence?.sourceIds.map((id) => { const source = sourceById.get(id); return source ? <a key={id} href={source.url} target="_blank" rel="noreferrer">{source.publisher} ↗</a> : null; })}</div><small>{chapterEvidence?.mediaIds.length ?? 0} 项关联影像 · {chapterEvidence?.pointIds.length ?? 0} 个关联点位</small></div></div></>}
 
       {module === "field" && <div className="field-player">
         <div className="exhibit-heading"><p>TWO-DAY FIELD PLAYER</p><h2>两日实践轨迹</h2><span>按原始素材时间与现场主题组织两日影像记录。</span></div>

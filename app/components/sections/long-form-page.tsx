@@ -3,7 +3,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { useEffect, useRef, type ReactNode } from "react";
-import { herbs, media, mediaById, sourceById, sources, storyPoints, timelineEvents, tourChapters, waterTimeline } from "@/content";
+import { herbs, media, mediaById, sourceById, sources, sourceUsageById, storyPoints, timelineEvents, tourChapters, waterTimeline } from "@/content";
 
 type LongFormPageProps = {
   mapSlot: ReactNode;
@@ -122,6 +122,6 @@ export function LongFormPage({ mapSlot, showAllMedia, onToggleMedia, onStartExhi
     <section className="closing-story" aria-labelledby="closing-title"><img src="/media/2026-08-04/volunteer-signs.webp" alt="公益林基地里志愿者留下的手绘牌" loading="lazy" /><div className="closing-copy"><div className="section-index light">A6 / 长期守护记录</div><p className="eyebrow light">ONE TREE, MANY HANDS</p><h2 id="closing-title">地图上的一个点，<br />是现实中的一段长期维护。</h2><p>种下一棵树只是开始。补水、养护、记录与传播，才让一次社会实践进入更长的时间尺度。</p><blockquote>我们记录的不是一个完成式，而是一座绿洲仍在继续的故事。</blockquote><span>— 实践地图编辑说明</span><button className="closing-tour" onClick={() => onStartExhibit()}>以5分钟导览重看全篇 →</button></div></section>
     </div>
 
-    <footer id="sources"><div className="footer-brand"><span className="brand-mark">绿</span><div><strong>民勤中医药生态文化数字地图</strong><small>首期正式成果 · 绿洲药韵·丝路智传实践团</small></div></div><div className="footer-sources"><h2>资料来源</h2>{sources.map((source, index) => <a key={source.id} href={source.url} target="_blank" rel="noreferrer"><span>{String(index + 1).padStart(2, "0")}</span><div>{source.title}<small>{source.publisher} · {source.publishedAt}</small></div><b>↗</b></a>)}</div><div className="method-note"><strong>资料与方法说明</strong><p>团队照片与视频摄于2026年8月3—4日；公开资料用于历史、生态、科研、人物与产业背景。公开知识点不计入团队到访；GPS 实拍点与采样线来自影像元数据，不表示完整轨迹、行政边界或导航位置。网站底图为本地 PMTiles，底图失败时文字与影像仍可浏览。</p></div><div className="footer-note"><p>发布边界：现场科普仅作活动记录；直播素材经过隐私裁剪；药材内容聚焦资源、生态与产业。</p><p>版本：首期正式成果 · 更新于 2026.08.11</p></div></footer>
+    <footer id="sources"><div className="footer-brand"><span className="brand-mark">绿</span><div><strong>民勤中医药生态文化数字地图</strong><small>首期正式成果 · 绿洲药韵·丝路智传实践团</small></div></div><div className="footer-sources"><h2>资料来源与反向索引</h2>{sources.map((source, index) => { const usageLabels = [...new Set((sourceUsageById.get(source.id) ?? []).map((usage) => usage.label))]; return <a key={source.id} href={source.url} target="_blank" rel="noreferrer"><span>{String(index + 1).padStart(2, "0")}</span><div>{source.title}<small>{source.publisher} · {source.publishedAt}</small><em>支撑：{usageLabels.join(" / ") || "待关联"}</em></div><b>↗</b></a>; })}</div><div className="method-note"><strong>资料与方法说明</strong><p>团队照片与视频摄于2026年8月3—4日；公开资料用于历史、生态、科研、人物与产业背景。公开知识点不计入团队到访；GPS 实拍点与采样线来自影像元数据，不表示完整轨迹、行政边界或导航位置。网站底图为本地 PMTiles，底图失败时文字与影像仍可浏览。</p></div><div className="footer-note"><p>发布边界：现场科普仅作活动记录；直播素材经过隐私裁剪；药材内容聚焦资源、生态与产业。</p><p>版本：首期正式成果 · 更新于 2026.08.11</p></div></footer>
   </>;
 }

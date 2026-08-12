@@ -11,7 +11,7 @@ async function render(pathname = "/") {
   return worker.fetch(new Request(`http://localhost${pathname}`, { headers: { accept: "text/html", host: "localhost" } }), { ASSETS: { fetch: async () => new Response("Not found", { status: 404 }) } }, { waitUntil() {}, passThroughOnException() {} });
 }
 
-const contentFiles = ["types.ts", "sources.ts", "media.ts", "story-points.ts", "field-timeline.ts", "field-tracks.ts", "water-stages.ts", "resources.ts", "exhibit-scenes.ts", "index.ts"];
+const contentFiles = ["types.ts", "sources.ts", "media.ts", "story-points.ts", "field-timeline.ts", "field-tracks.ts", "water-stages.ts", "resources.ts", "exhibit-scenes.ts", "evidence-index.ts", "index.ts"];
 const componentFiles = [
   "components/experience/experience.tsx",
   "components/map/interactive-map.tsx",
@@ -153,6 +153,20 @@ test("guided tour uses the five chapter durations as its single playback timelin
   assert.match(experience, /tourChapters\[tourIndex\]\.durationSeconds \* 1000/);
   assert.match(experience, /setTourPlayback\("completed"\)/);
   for (const label of ["自动播放", "暂停", "继续", "五章导览已完成"]) assert.match(exhibit, new RegExp(label));
+});
+
+test("derives bidirectional chapter and source evidence indexes", async () => {
+  const evidence = await readFile(new URL("../content/evidence-index.ts", import.meta.url), "utf8");
+  const index = await readFile(new URL("../content/index.ts", import.meta.url), "utf8");
+  const exhibit = await readFile(new URL("../app/components/exhibit/digital-exhibit.tsx", import.meta.url), "utf8");
+  const page = await readFile(new URL("../app/components/sections/long-form-page.tsx", import.meta.url), "utf8");
+  assert.match(evidence, /chapterEvidenceById/);
+  assert.match(evidence, /sourceUsageById/);
+  for (const collection of ["tourChapters", "storyPoints", "waterStages", "herbs"]) assert.match(evidence, new RegExp(`for \\(const .* of ${collection}\\)|${collection}\\.(?:map|filter)`));
+  assert.match(index, /evidence-index/);
+  assert.match(exhibit, /本章依据 · EVIDENCE/);
+  assert.match(page, /资料来源与反向索引/);
+  assert.match(page, /支撑：/);
 });
 
 test("maintenance documentation covers the content workflows", async () => {

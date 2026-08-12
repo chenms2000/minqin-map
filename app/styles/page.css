@@ -114,6 +114,7 @@ footer { padding: 82px 7vw 38px; color: #d7e0da; background: #0f1913; }
 .footer-sources a { grid-column: 2; display: grid; grid-template-columns: 34px 1fr 24px; gap: 13px; align-items: center; padding: 16px 0; border-bottom: 1px solid rgba(255,255,255,.1); text-decoration: none; font-size: 12px; }
 .footer-sources a span { color: #e5c57e; font-size: 9px; }
 .footer-sources a small { display: block; margin-top: 5px; color: rgba(255,255,255,.38); font-size: 8px; }
+.footer-sources a em { display: block; margin-top: 7px; color: rgba(229,197,126,.7); font-size: 8px; font-style: normal; line-height: 1.55; }
 .footer-sources a b { font-size: 15px; font-weight: 400; transition: transform .2s ease; }
 .footer-sources a:hover b { transform: translate(3px,-3px); }
 .footer-note { display: flex; justify-content: space-between; gap: 30px; padding-top: 28px; border-top: 1px solid rgba(255,255,255,.13); }

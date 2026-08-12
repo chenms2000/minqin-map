@@ -2,6 +2,13 @@
 
 每次完成实际维护后，由 Codex 在顶部追加一条简短记录。
 
+## 2026-08-12 - 五章双向证据索引
+
+- 数据：新增 `evidence-index.ts`，从现有章节、点位、水脉阶段与资源的 ID 关系派生 `chapterEvidenceById` 和 `sourceUsageById`
+- 展示：数字展框每章显示来源数、来源入口、关联影像与点位数；Footer 为每条来源显示反向支撑对象
+- 维护：来源缺少实际 usage 会被内容校验拦截；空 `sourceIds` 仍返回安全的空证据集合
+- 验证：P2 按计划运行 `npm run lint` 与 `npm run build`
+
 ## 2026-08-12 - 证据文案减负
 
 - 叙事：五章 eyebrow、narration、首页标题和展框模块说明改为肯定陈述，直接说明历史、水脉、现场与产业关系

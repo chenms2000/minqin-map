@@ -26,6 +26,12 @@
 .tour-copy h2 { margin: 7px 0 13px; font-family: var(--serif); font-size: clamp(34px,3vw,52px); line-height: 1; }
 .tour-copy > p:not(:first-child) { margin: 0; color: rgba(255,255,255,.72); font-size: 12px; line-height: 1.85; }
 .tour-copy small { display: block; margin-top: 13px; color: rgba(255,255,255,.38); font-size: 8px; line-height: 1.6; }
+.chapter-evidence { margin-top: 16px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,.12); }
+.chapter-evidence > strong { display: flex; justify-content: space-between; color: rgba(255,255,255,.58); font-size: 7px; letter-spacing: .12em; }
+.chapter-evidence > strong i { color: #e5c57e; font-style: normal; }
+.chapter-evidence > div { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.chapter-evidence a { padding: 5px 7px; border: 1px solid rgba(229,197,126,.28); color: #e5c57e; font-size: 7px; }
+.chapter-evidence > small { margin-top: 8px; }
 .exhibit-heading { padding: 18px 22px 12px; }
 .exhibit-heading > p { margin: 0 0 5px; color: #e5c57e; font-size: 7px; letter-spacing: .14em; }
 .exhibit-heading h2 { margin: 0 0 7px; font-family: var(--serif); font-size: clamp(28px,2.5vw,42px); }
