@@ -5,15 +5,16 @@ import { AttributionControl, Map as MapLibreMap, Marker, NavigationControl, Popu
 import { FileSource, PMTiles, Protocol } from "pmtiles";
 import { fieldTracks, type StoryLayer, type StoryPoint } from "@/content";
 import { accuracyClass } from "@/app/lib/formatters";
-import { contextLabels, defaultView, localArchiveName, localArchivePath, localMapStyle, mapBounds, practiceRoute, waterRoute } from "@/app/lib/map-config";
+import { cartographicPalette, cartographicTuning, contextLabels, defaultView, localArchiveName, localArchivePath, localMapStyle, mapBounds, practiceRoute, waterRoute, zoomExpression } from "@/app/lib/map-config";
 
 type UseMinqinMapOptions = {
   activeLayer: StoryLayer;
   activePoints: StoryPoint[];
+  selectedId: string | null;
   onPointActivate: (pointId: string) => void;
 };
 
-export function useMinqinMap({ activeLayer, activePoints, onPointActivate }: UseMinqinMapOptions) {
+export function useMinqinMap({ activeLayer, activePoints, selectedId, onPointActivate }: UseMinqinMapOptions) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<MapLibreMap | null>(null);
   const markers = useRef<Marker[]>([]);
@@ -79,13 +80,13 @@ export function useMinqinMap({ activeLayer, activePoints, onPointActivate }: Use
           setMapFallback(false);
           setMapProgress(100);
           map.addSource("practice-route", { type: "geojson", data: practiceRoute });
-          map.addLayer({ id: "practice-route-halo", type: "line", source: "practice-route", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#fff4dc", "line-width": 6, "line-opacity": 0.34 } });
-          map.addLayer({ id: "practice-route-line", type: "line", source: "practice-route", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#c9563e", "line-width": 2.2, "line-opacity": 0.58, "line-dasharray": [1.2, 2.4] } });
+          map.addLayer({ id: "practice-route-halo", type: "line", source: "practice-route", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": cartographicPalette.routes.practiceHalo, "line-width": zoomExpression(cartographicTuning.routes.practiceHalo.width), "line-opacity": zoomExpression(cartographicTuning.routes.practiceHalo.opacity) } });
+          map.addLayer({ id: "practice-route-line", type: "line", source: "practice-route", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": cartographicPalette.routes.practice, "line-width": zoomExpression(cartographicTuning.routes.practice.width), "line-opacity": zoomExpression(cartographicTuning.routes.practice.opacity), "line-dasharray": [1.2, 2.4] } });
           fieldTracks.forEach((track) => {
             const sourceId = `field-track-${track.id}`;
             const layerId = `${sourceId}-line`;
             map?.addSource(sourceId, { type: "geojson", data: { type: "Feature", properties: { label: track.label, notice: track.notice }, geometry: { type: "LineString", coordinates: track.coordinates } } });
-            map?.addLayer({ id: layerId, type: "line", source: sourceId, layout: { visibility: "visible", "line-cap": "round", "line-join": "round" }, paint: { "line-color": track.color, "line-width": 3, "line-opacity": 0.72, "line-dasharray": [0.25, 1.4] } });
+            map?.addLayer({ id: layerId, type: "line", source: sourceId, layout: { visibility: "visible", "line-cap": "round", "line-join": "round" }, paint: { "line-color": track.color, "line-width": zoomExpression(cartographicTuning.routes.field.width), "line-opacity": zoomExpression(cartographicTuning.routes.field.opacity), "line-dasharray": [0.25, 1.4] } });
             map?.on("mouseenter", layerId, () => { if (map) map.getCanvas().style.cursor = "pointer"; });
             map?.on("mouseleave", layerId, () => { if (map) map.getCanvas().style.cursor = ""; });
             map?.on("click", layerId, (event) => {
@@ -101,7 +102,7 @@ export function useMinqinMap({ activeLayer, activePoints, onPointActivate }: Use
             });
           });
           map.addSource("water-route", { type: "geojson", data: waterRoute });
-          map.addLayer({ id: "water-route-line", type: "line", source: "water-route", layout: { visibility: "none", "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#228aa1", "line-width": 5, "line-opacity": 0.8 } });
+          map.addLayer({ id: "water-route-line", type: "line", source: "water-route", layout: { visibility: "none", "line-cap": "round", "line-join": "round" }, paint: { "line-color": cartographicPalette.routes.water, "line-width": zoomExpression(cartographicTuning.routes.water.width), "line-opacity": zoomExpression(cartographicTuning.routes.water.opacity) } });
           setMapReady(true);
         });
         map.on("error", () => { if (!loaded) setMapFallback(true); });
@@ -130,23 +131,38 @@ export function useMinqinMap({ activeLayer, activePoints, onPointActivate }: Use
     if (!map) return;
     markers.current.forEach((marker) => marker.remove());
     markers.current = [];
+    const contextElements: Array<{ element: HTMLDivElement; minZoom: number; fullZoom: number }> = [];
     contextLabels.forEach((label) => {
       const element = document.createElement("div");
       element.className = `map-context-label ${label.kind}`;
       element.textContent = label.name;
       element.setAttribute("aria-hidden", "true");
+      contextElements.push({ element, minZoom: label.minZoom, fullZoom: label.fullZoom });
       markers.current.push(new Marker({ element, anchor: "center" }).setLngLat(label.coordinates).addTo(map));
     });
+    const updateContextLabelDensity = () => {
+      const zoom = map.getZoom();
+      contextElements.forEach(({ element, minZoom, fullZoom }) => {
+        const opacity = Math.max(0, Math.min(1, (zoom - minZoom) / (fullZoom - minZoom)));
+        element.style.setProperty("--context-opacity", opacity.toFixed(2));
+        element.classList.toggle("is-visible", opacity > 0.04);
+      });
+    };
+    updateContextLabelDensity();
+    map.on("zoom", updateContextLabelDensity);
     activePoints.forEach((point, index) => {
       const button = document.createElement("button");
       button.type = "button";
-      button.className = `map-story-marker ${activeLayer} ${accuracyClass(point.accuracy)} ${point.contentOrigin === "团队实践" ? "field" : "reference"}`;
+      const isSelected = selectedId === point.id;
+      button.className = `map-story-marker ${activeLayer} ${accuracyClass(point.accuracy)} ${point.contentOrigin === "团队实践" ? "field" : "reference"}${isSelected ? " is-selected" : selectedId ? " is-dimmed" : ""}`;
       button.style.setProperty("--marker-color", point.color);
       button.setAttribute("aria-label", `打开故事：${point.title}`);
+      button.setAttribute("aria-pressed", String(isSelected));
+      if (isSelected) button.setAttribute("aria-current", "location");
       button.title = `${point.title}｜${point.accuracy}`;
       button.textContent = String(index + 1).padStart(2, "0");
       button.addEventListener("click", () => activationRef.current(point.id));
-      markers.current.push(new Marker({ element: button, anchor: "bottom" }).setLngLat(point.coordinates).addTo(map));
+      markers.current.push(new Marker({ element: button, anchor: "center" }).setLngLat(point.coordinates).addTo(map));
     });
     if (map.loaded()) {
       map.setLayoutProperty("practice-route-halo", "visibility", activeLayer === "practice" ? "visible" : "none");
@@ -157,7 +173,8 @@ export function useMinqinMap({ activeLayer, activePoints, onPointActivate }: Use
       });
       map.setLayoutProperty("water-route-line", "visibility", activeLayer === "water" ? "visible" : "none");
     }
-  }, [activeLayer, activePoints, mapReady]);
+    return () => map.off("zoom", updateContextLabelDensity);
+  }, [activeLayer, activePoints, mapReady, selectedId]);
 
   return { mapContainer, mapInstance, mapFallback, mapReady, mapProgress };
 }

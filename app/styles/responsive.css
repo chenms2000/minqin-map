@@ -29,7 +29,7 @@
   .chapter-number span { width: 56px; height: 56px; font-size: 21px; }
 }
 
-@media (max-width: 680px) {
+@media (max-width: 700px) {
   .site-nav { height: 64px; padding: 0 18px; }
   .nav-date { font-size: 8px; }
   .brand-mark { width: 34px; height: 34px; }
@@ -58,7 +58,7 @@
   .layer-tabs button { min-height: 65px; border-bottom: 1px solid rgba(255,255,255,.17); }
   .layer-tabs button:nth-child(2) { border-right: 0; }
   .map-frame { height: 72vh; min-height: 570px; border-left: 0; border-right: 0; border-bottom: 0; }
-  .point-list { top: 50px; left: 12px; right: 12px; width: auto; grid-template-columns: 1fr; }
+  .point-list { top: 50px; left: 12px; right: 12px; width: auto; }
   .point-list button { padding: 8px; background: rgba(20,37,29,.86); }
   .point-list button > span { width: 26px; height: 26px; }
   .point-list button:not(:first-child) { display: none; }
@@ -66,6 +66,7 @@
   .map-corner-bottom { display: none; }
   .story-drawer { position: absolute; inset: auto 0 0; width: 100%; height: min(76%, 650px); transform: translateY(105%); border-radius: 20px 20px 0 0; }
   .story-drawer.open { transform: translateY(0); }
+  .map-frame:has(.story-drawer.open) .point-list, .map-frame:has(.story-drawer.open) .map-legend { display: none; }
   .drawer-scroll { padding: 40px 20px 42px; }
   .drawer-scroll h3 { font-size: 36px; }
   .story-media figcaption { grid-template-columns: 1fr; gap: 2px; }
@@ -135,7 +136,7 @@
   .tour-panel { width: 44vw; }
 }
 
-@media (max-width: 680px) {
+@media (max-width: 700px) {
   .hero-actions { width: 100%; }
   .secondary-action { padding-left: 2px; }
   .dossier { display: block; padding: 78px 20px; }
@@ -148,9 +149,11 @@
   .dossier-stats article:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
   .map-data-badge { left: 12px; right: auto; top: 16px; }
   .map-corner-top { display: none; }
-  .map-legend { top: 50px; right: 12px; width: 158px; }
-  .map-tools { right: 12px; bottom: 60px; }
-  .point-list { top: 50px; right: auto; max-height: 220px; overflow-y: auto; width: min(250px,67vw); }
+  .map-legend { top: 50px; right: 12px; width: auto; }
+  .map-legend > div { width: min(188px, calc(100vw - 24px)); }
+  .map-tools { right: 58px; bottom: 12px; }
+  .point-list { top: 50px; right: auto; max-height: 220px; width: min(250px,67vw); }
+  .point-list > div { max-height: 178px; }
   .point-list button:not(:first-child) { display: grid; }
   .map-legend + .point-list { top: 50px; }
   .field-media { padding: 78px 20px; }

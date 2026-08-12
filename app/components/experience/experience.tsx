@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { chapterFramesById, herbs, mediaById, relationshipEdges, sourceById, storyPointById, storyPoints, timelineEvents, tourChapters, waterStages, type ResourceSectionKey, type StoryLayer, type TimelineCategory } from "@/content";
+import { chapterFramesById, herbs, mediaById, relationshipEdges, sourceById, storyPointById, storyPoints, timelineEvents, tourChapters, waterStages, type ResourceSectionKey, type StoryLayer, type StoryPoint, type TimelineCategory } from "@/content";
 import { DigitalExhibit, type ExhibitModule, type ResourceView, type TimelineDay } from "@/app/components/exhibit/digital-exhibit";
 import { InteractiveMap } from "@/app/components/map/interactive-map";
 import { LongFormPage } from "@/app/components/sections/long-form-page";
@@ -10,6 +10,13 @@ import { defaultView } from "@/app/lib/map-config";
 
 const exhibitModules: ExhibitModule[] = ["tour", "field", "water", "resources"];
 export type TourPlaybackState = "idle" | "playing" | "paused" | "completed";
+
+const pointCameraTuning = { waterZoom: 9.2, contextZoom: 9.5, gpsZoom: 13.15, pitch: 45, bearing: -8 } as const;
+
+function cameraForPoint(point: Pick<StoryPoint, "coordinates" | "layer" | "accuracy">, duration: number, offset?: [number, number]) {
+  const zoom = point.layer === "water" ? pointCameraTuning.waterZoom : point.accuracy === "GPS实拍点" ? pointCameraTuning.gpsZoom : pointCameraTuning.contextZoom;
+  return { center: point.coordinates, zoom, pitch: pointCameraTuning.pitch, bearing: pointCameraTuning.bearing, duration, ...(offset ? { offset } : {}) };
+}
 
 function chapterIndexFromId(id: string | null) {
   return id ? tourChapters.findIndex((chapter) => chapter.id === id) : -1;
@@ -76,7 +83,7 @@ export function Experience() {
   const waterStage = waterStages[waterStageIndex];
   const selectedResourcePoint = storyPointById.get(herbs[resourceIndex].mapPointId);
 
-  const { mapContainer, mapInstance, mapFallback, mapReady, mapProgress } = useMinqinMap({ activeLayer, activePoints, onPointActivate: activateMapPoint });
+  const { mapContainer, mapInstance, mapFallback, mapReady, mapProgress } = useMinqinMap({ activeLayer, activePoints, selectedId, onPointActivate: activateMapPoint });
 
   useEffect(() => {
     if (!tourMode || exhibitModule !== "tour" || tourPlayback !== "playing") return;
@@ -163,7 +170,7 @@ export function Experience() {
     previousFocus.current = document.activeElement as HTMLElement;
     closeButton.current?.focus();
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    mapInstance.current?.easeTo({ center: selected.coordinates, zoom: selected.layer === "water" ? 8.6 : selected.accuracy === "GPS实拍点" ? 13.15 : 9.3, duration: reduced ? 0 : 800, offset: window.innerWidth < 680 ? [0, -120] : [-150, 0] });
+    mapInstance.current?.easeTo(cameraForPoint(selected, reduced ? 0 : 800, window.innerWidth < 700 ? [0, -210] : [-150, 0]));
     const onKeyDown = (event: KeyboardEvent) => { if (event.key === "Escape") closeStory(); };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
@@ -178,14 +185,14 @@ export function Experience() {
       mapInstance.current?.resize();
       if (exhibitModule === "tour" && activeTourPoint) {
         setActiveLayer(activeTourPoint.layer);
-        mapInstance.current?.easeTo({ center: activeTourPoint.coordinates, zoom: activeTourPoint.layer === "water" ? 9.2 : activeTourPoint.accuracy === "GPS实拍点" ? 13.15 : 9.5, pitch: 46, bearing: -8, duration: reduced ? 0 : 850 });
+        mapInstance.current?.easeTo(cameraForPoint(activeTourPoint, reduced ? 0 : 850));
       } else if (exhibitModule === "tour") {
         setActiveLayer(chapter.layer);
         mapInstance.current?.easeTo({ ...chapter.mapView, duration: reduced ? 0 : 850 });
       }
-      if (exhibitModule === "field" && timelinePoint) mapInstance.current?.easeTo({ center: timelinePoint.coordinates, zoom: timelinePoint.accuracy === "GPS实拍点" ? 13.15 : 9.5, pitch: 48, bearing: -8, duration: reduced ? 0 : 700 });
+      if (exhibitModule === "field" && timelinePoint) mapInstance.current?.easeTo(cameraForPoint(timelinePoint, reduced ? 0 : 700));
       if (exhibitModule === "water") mapInstance.current?.easeTo({ ...waterStage.mapView, duration: reduced ? 0 : 800 });
-      if (exhibitModule === "resources" && selectedResourcePoint) mapInstance.current?.easeTo({ center: selectedResourcePoint.coordinates, zoom: 9.25, pitch: 44, bearing: -7, duration: reduced ? 0 : 700 });
+      if (exhibitModule === "resources" && selectedResourcePoint) mapInstance.current?.easeTo(cameraForPoint(selectedResourcePoint, reduced ? 0 : 700));
       tourPanel.current?.focus();
     }, 80);
     const onKeyDown = (event: KeyboardEvent) => {
@@ -294,7 +301,7 @@ export function Experience() {
     const point = storyPointById.get(pointId);
     if (!point) return;
     setActiveLayer(point.layer);
-    mapInstance.current?.easeTo({ center: point.coordinates, zoom: 9.2, pitch: 44, duration: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 650 });
+    mapInstance.current?.easeTo(cameraForPoint(point, window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 650));
   }
 
   function closeStory() { setSelectedId(null); window.setTimeout(() => (previousFocus.current ?? mapSection.current)?.focus(), 0); }

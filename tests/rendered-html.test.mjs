@@ -144,15 +144,38 @@ test("map archive is a lightweight valid PMTiles package", async () => {
   assert.equal(archive.subarray(0, 7).toString("utf8"), "PMTiles");
 });
 
-test("local map style establishes land and road hierarchy", async () => {
+test("local map keeps one offline MapLibre entry and its route semantics", async () => {
+  const experience = await readFile(new URL("../app/components/experience/experience.tsx", import.meta.url), "utf8");
+  const hook = await readFile(new URL("../app/hooks/use-minqin-map.ts", import.meta.url), "utf8");
+  const map = await readFile(new URL("../app/components/map/interactive-map.tsx", import.meta.url), "utf8");
+  const config = await readFile(new URL("../app/lib/map-config.ts", import.meta.url), "utf8");
+  const responsive = await readFile(new URL("../app/styles/responsive.css", import.meta.url), "utf8");
+  const mapSource = `${experience}\n${hook}\n${map}\n${config}`;
+  assert.equal((experience.match(/<InteractiveMap\b/g) ?? []).length, 1);
+  assert.equal((hook.match(/new MapLibreMap\(/g) ?? []).length, 1);
+  assert.match(config, /pmtiles:\/\//);
+  assert.match(mapSource, /叙事路径，非导航路线/);
+  assert.match(mapSource, /影像 GPS 采样线/);
+  assert.match(mapSource, /非完整轨迹、非导航路线/);
+  assert.match(experience, /matchMedia\("\(prefers-reduced-motion: reduce\)"\)/);
+  assert.match(responsive, /@media \(prefers-reduced-motion: reduce\)/);
+  assert.doesNotMatch(mapSource, /api\.mapbox\.com|maps\.google|tile\.openstreetmap|tiles\.stadiamaps|basemaps\.cartocdn|tiles\.openfreemap/i);
+});
+
+test("local map establishes zoom-aware cartographic and selected-marker hierarchy", async () => {
   const config = await readFile(new URL("../app/lib/map-config.ts", import.meta.url), "utf8");
   const hook = await readFile(new URL("../app/hooks/use-minqin-map.ts", import.meta.url), "utf8");
-  assert.match(config, /layer\.id === "landcover"/);
-  assert.match(config, /other\|service\|taxiway\|pier/);
-  assert.match(config, /minor\|link/);
-  assert.match(config, /"line-opacity": opacity/);
-  assert.match(hook, /practice-route-halo/);
-  assert.match(hook, /"line-width": 2\.2/);
+  assert.match(config, /cartographicPalette/);
+  assert.match(config, /cartographicTuning/);
+  assert.match(config, /zoomExpression\(\[7\.2, 0\.54/);
+  for (const roadClass of ["highway", "major", "minor", "service"]) assert.match(config, new RegExp(`${roadClass}: \\{ minZoom:`));
+  assert.match(config, /layer\.id === "buildings"/);
+  assert.match(config, /"line-opacity": zoomExpression\(opacityStops\)/);
+  for (const route of ["practiceHalo", "practice", "field", "water"]) assert.match(hook, new RegExp(`cartographicTuning\\.routes\\.${route}\\.(?:width|opacity)`));
+  assert.match(hook, /map\.on\("zoom", updateContextLabelDensity\)/);
+  assert.match(hook, /selectedId === point\.id/);
+  assert.match(hook, /is-selected/);
+  assert.match(hook, /aria-current/);
 });
 
 test("guided tour derives its timeline from unique frame media durations", async () => {
@@ -205,7 +228,7 @@ test("continuous tour rotates map points, media, video and source text as derive
   assert.match(evidence, /asset\.type !== "video"/);
   assert.match(experience, /activeTourFrameIndex/);
   assert.match(evidence, /claimTourMedia/);
-  assert.match(experience, /activeTourPoint\.coordinates/);
+  assert.match(experience, /cameraForPoint\(activeTourPoint/);
   assert.match(exhibit, /autoPlay=\{isPlaying\}/);
   assert.match(exhibit, /muted playsInline preload/);
   assert.doesNotMatch(exhibit, /playsInline loop/);

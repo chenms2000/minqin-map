@@ -2,6 +2,16 @@
 
 每次完成实际维护后，由 Codex 在顶部追加一条简短记录。
 
+## 2026-08-12 - 数字地图第二轮制图质感精修
+
+- 制图：集中 cartographic palette / tuning，基于 Protomaps 实际图层为 highway、major、minor、service、边界、建筑和地貌设置渐进缩放层级，保留原有复杂颜色与宽度表达式
+- 叙事线：实践路线衬底/虚线、两条 GPS 影像采样线和水脉关系线全部改为 zoom-aware width / opacity，继续保留非导航、非完整轨迹和关系示意语义
+- 点位与标签：marker 改为 44px 操作区内的 ring + core 测绘站符号；selected 状态接入地图 marker、ARIA 与非选中降权；城市、水体、镇级 DOM 标签按缩放分级
+- Chrome 与响应式：point-list / 图例可展开，原生控件与自定义工具错位；手机抽屉保留 selected marker，fallback 提示避开工具，700px 断点覆盖 200% 等效缩放
+- 镜头：统一 selected、tour、timeline、resource 与关系点位镜头参数，不修改章节 `mapView`、URL、播放时长或状态机
+- 验证：Browser Skill 覆盖 1920×1080、1366×768、980px、390×844、683px 等效 200%、story、tour、GPS/县域点选中、fallback 与 fullscreen；单一地图和 OSM attribution 保持，控制台无 warn/error
+- 发布：未提交、未 push、未部署；`docs/CONTEXT_POLICY.md` 与 `docs/HANDOFF.md` 原样保留
+
 ## 2026-08-12 - 纪录片与数字博物馆 UI 收口
 
 - 视觉：补齐全站表面色、文字、间距、字号、焦点与运动令牌；首页与五章采用编辑式网格，档案、来源、数据和药材统一为米白展签
