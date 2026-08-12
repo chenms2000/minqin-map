@@ -21,12 +21,12 @@ const componentFiles = [
   "lib/map-config.ts",
 ];
 
-test("server-renders the first formal release", async () => {
+test("server-renders the maintained 2026 practice atlas", async () => {
   const response = await render();
   assert.equal(response.status, 200);
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
   const html = await response.text();
-  for (const label of ["民勤中医药生态文化数字地图", "首期正式成果", "项目档案", "进入数字展框", "自由浏览", "实践足迹", "绿洲水脉", "药材产业", "人物故事", "实践影像", "资料与方法说明"]) assert.match(html, new RegExp(label));
+  for (const label of ["民勤中医药生态文化数字地图", "2026暑期实践数字成果", "项目档案", "进入数字展框", "自由浏览", "实践足迹", "绿洲水脉", "药材产业", "人物故事", "实践影像", "资料与方法说明"]) assert.match(html, new RegExp(label));
   assert.match(html, /og:image/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape|react-loading-skeleton/i);
 });

@@ -70,13 +70,13 @@ export function LongFormPage({ mapSlot, showAllMedia, onToggleMedia, onStartExhi
     <header className="site-nav" aria-label="主导航">
       <a className="brand" href="#top" aria-label="返回首页"><span className="brand-mark">绿</span><span><strong>绿洲药韵</strong><small>MINQIN FIELD ATLAS</small></span></a>
       <nav><a href="#five-chapters">五章故事</a><a href="#map">探索工具</a><a href="#archive">资料档案</a><a href="#sources">资料来源</a></nav>
-      <span className="nav-date">首期正式成果 · 2026</span>
+      <span className="nav-date">持续维护 · 2026</span>
     </header>
 
     <section className="hero" id="top">
       <img className="hero-image" src="/media/2026-08-04/banner-team.webp" alt="实践团在民勤荒漠中举起队旗" />
       <div className="hero-wash" /><div className="weather-grid" aria-hidden="true" />
-      <div className="hero-kicker"><span>河西走廊 · 石羊河下游</span><span>首期正式成果 / 2026.08.11</span></div>
+      <div className="hero-kicker"><span>河西走廊 · 石羊河下游</span><span>数字成果 / 更新于 2026.08.12</span></div>
       <div className="hero-content"><p className="super-title">守护河西绿洲</p><h1>在沙与水之间，<br />读懂一座绿洲。</h1><p className="hero-lead">民勤生态治理背景下中医药资源利用与“一带一路”绿色传播实践</p><div className="hero-actions"><button className="primary-action" onClick={() => onStartExhibit(0, true)}>开始 5 分钟导览 <span>→</span></button><a className="secondary-action" href="#map">自由浏览</a><span className="team-label">北京中医药大学生命科学学院<br />绿洲药韵·丝路智传实践团</span></div></div>
       <div className="hero-readout" aria-label="项目数据概览"><div><strong>{String(fieldDates.size).padStart(2, "0")}</strong><span>实践日<br />FIELD DAYS</span></div><div><strong>{String(visitedPoints).padStart(2, "0")}</strong><span>团队足迹<br />FIELD POINTS</span></div><div><strong>{String(media.length).padStart(2, "0")}</strong><span>影像素材<br />MEDIA ASSETS</span></div></div>
     </section>
@@ -122,6 +122,6 @@ export function LongFormPage({ mapSlot, showAllMedia, onToggleMedia, onStartExhi
     <section className="closing-story" aria-labelledby="closing-title"><img src="/media/2026-08-04/volunteer-signs.webp" alt="公益林基地里志愿者留下的手绘牌" loading="lazy" /><div className="closing-copy"><div className="section-index light">A6 / 长期守护记录</div><p className="eyebrow light">ONE TREE, MANY HANDS</p><h2 id="closing-title">地图上的一个点，<br />是现实中的一段长期维护。</h2><p>种下一棵树只是开始。补水、养护、记录与传播，才让一次社会实践进入更长的时间尺度。</p><blockquote>我们记录的不是一个完成式，而是一座绿洲仍在继续的故事。</blockquote><span>— 实践地图编辑说明</span><button className="closing-tour" onClick={() => onStartExhibit(0, true)}>以5分钟导览重看全篇 →</button></div></section>
     </div>
 
-    <footer id="sources"><div className="footer-brand"><span className="brand-mark">绿</span><div><strong>民勤中医药生态文化数字地图</strong><small>首期正式成果 · 绿洲药韵·丝路智传实践团</small></div></div><div className="footer-sources"><h2>资料来源与反向索引</h2>{sources.map((source, index) => { const usageLabels = [...new Set((sourceUsageById.get(source.id) ?? []).map((usage) => usage.label))]; return <a key={source.id} href={source.url} target="_blank" rel="noreferrer"><span>{String(index + 1).padStart(2, "0")}</span><div>{source.title}<small>{source.publisher} · {source.publishedAt}</small><em>支撑：{usageLabels.join(" / ") || "待关联"}</em></div><b>↗</b></a>; })}</div><div className="method-note"><strong>资料与方法说明</strong><p>团队照片与视频摄于2026年8月3—4日；公开资料用于历史、生态、科研、人物与产业背景。公开知识点不计入团队到访；GPS 实拍点与采样线来自影像元数据，不表示完整轨迹、行政边界或导航位置。网站底图为本地 PMTiles，底图失败时文字与影像仍可浏览。</p></div><div className="footer-note"><p>发布边界：现场科普仅作活动记录；直播素材经过隐私裁剪；药材内容聚焦资源、生态与产业。</p><p>版本：首期正式成果 · 更新于 2026.08.11</p></div></footer>
+    <footer id="sources"><div className="footer-brand"><span className="brand-mark">绿</span><div><strong>民勤中医药生态文化数字地图</strong><small>2026暑期实践数字成果 · 绿洲药韵·丝路智传实践团</small></div></div><div className="footer-sources"><h2>资料来源与反向索引</h2>{sources.map((source, index) => { const usageLabels = [...new Set((sourceUsageById.get(source.id) ?? []).map((usage) => usage.label))]; return <a key={source.id} href={source.url} target="_blank" rel="noreferrer"><span>{String(index + 1).padStart(2, "0")}</span><div>{source.title}<small>{source.publisher} · {source.publishedAt}</small><em>支撑：{usageLabels.join(" / ") || "待关联"}</em></div><b>↗</b></a>; })}</div><div className="method-note"><strong>资料与方法说明</strong><p>团队照片与视频摄于2026年8月3—4日；公开资料用于历史、生态、科研、人物与产业背景。公开知识点不计入团队到访；GPS 实拍点与采样线来自影像元数据，不表示完整轨迹、行政边界或导航位置。网站底图为本地 PMTiles，底图失败时文字与影像仍可浏览。</p></div><div className="footer-note"><p>发布边界：现场科普仅作活动记录；直播素材经过隐私裁剪；药材内容聚焦资源、生态与产业。</p><p>版本：持续维护版 · 更新于 2026.08.12</p></div></footer>
   </>;
 }

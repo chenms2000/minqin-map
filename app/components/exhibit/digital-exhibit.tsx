@@ -81,7 +81,7 @@ export function DigitalExhibit(props: DigitalExhibitProps) {
   }
 
   return <aside className="tour-panel exhibit-panel" ref={panelRef} tabIndex={-1} aria-label="数字展框" aria-live="polite" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
-    <div className="tour-top"><span>MINQIN DIGITAL EXHIBIT · 首期正式成果</span><button onClick={props.onEnd} aria-label="退出数字展框">退出 ×</button></div>
+    <div className="tour-top"><span>MINQIN DIGITAL EXHIBIT · 2026 PRACTICE ATLAS</span><button onClick={props.onEnd} aria-label="退出数字展框">退出 ×</button></div>
     <div className="exhibit-modules" role="tablist" aria-label="展框模块">{moduleMeta.map((item) => <button key={item.id} role="tab" aria-selected={module === item.id} className={module === item.id ? "active" : ""} onClick={() => props.onSelectModule(item.id)}><strong>{item.label}</strong><small>{item.en}</small></button>)}</div>
 
     <div className={`exhibit-stage module-${module}`}>
