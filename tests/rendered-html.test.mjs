@@ -142,6 +142,19 @@ test("local map style establishes land and road hierarchy", async () => {
   assert.match(hook, /"line-width": 2\.2/);
 });
 
+test("guided tour uses the five chapter durations as its single playback timeline", async () => {
+  const experience = await readFile(new URL("../app/components/experience/experience.tsx", import.meta.url), "utf8");
+  const exhibit = await readFile(new URL("../app/components/exhibit/digital-exhibit.tsx", import.meta.url), "utf8");
+  const scenes = await readFile(new URL("../content/exhibit-scenes.ts", import.meta.url), "utf8");
+  const durations = [...scenes.matchAll(/durationSeconds: (\d+)/g)].map((match) => Number(match[1]));
+  assert.deepEqual(durations, [45, 50, 90, 60, 55]);
+  assert.equal(durations.reduce((total, duration) => total + duration, 0), 300);
+  assert.match(experience, /"idle" \| "playing" \| "paused" \| "completed"/);
+  assert.match(experience, /tourChapters\[tourIndex\]\.durationSeconds \* 1000/);
+  assert.match(experience, /setTourPlayback\("completed"\)/);
+  for (const label of ["自动播放", "暂停", "继续", "五章导览已完成"]) assert.match(exhibit, new RegExp(label));
+});
+
 test("maintenance documentation covers the content workflows", async () => {
   const structure = await readFile(new URL("../docs/PROJECT_STRUCTURE.md", import.meta.url), "utf8");
   const guide = await readFile(new URL("../docs/CONTENT_UPDATE_GUIDE.md", import.meta.url), "utf8");

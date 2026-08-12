@@ -164,7 +164,7 @@
   .method-note { grid-template-columns: 1fr; }
   .tour-mode .map-section { inset: 0 0 58vh; }
   .tour-mode .map-frame { height: 42vh; }
-  .tour-panel { inset: auto 0 0; width: 100%; min-width: 0; height: 60vh; grid-template-rows: auto auto minmax(0,1fr) auto auto auto; }
+  .tour-panel { inset: auto 0 0; width: 100%; min-width: 0; height: 60vh; grid-template-rows: auto auto minmax(0,1fr) auto auto auto auto; }
   .tour-top { padding: 8px 12px 6px; }
   .exhibit-modules button { padding: 8px 6px; }
   .exhibit-modules small { display: none; }
@@ -181,6 +181,8 @@
   .water-readout, .specimen-tabs, .specimen-sheet { margin-inline: 16px; }
   .relation-view { padding-inline: 16px; }
   .tour-controls { padding: 8px 12px; }
+  .tour-playback { padding: 7px 12px; }
+  .tour-playback span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
   .tour-controls span { display: none; }
   .tour-controls { grid-template-columns: 1fr 1fr; }
   .exhibit-rail button { padding-block: 6px; }

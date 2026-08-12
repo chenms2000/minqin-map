@@ -9,6 +9,7 @@ import { useMinqinMap } from "@/app/hooks/use-minqin-map";
 import { defaultView } from "@/app/lib/map-config";
 
 const exhibitModules: ExhibitModule[] = ["tour", "field", "water", "resources"];
+export type TourPlaybackState = "idle" | "playing" | "paused" | "completed";
 
 function chapterIndexFromId(id: string | null) {
   return id ? tourChapters.findIndex((chapter) => chapter.id === id) : -1;
@@ -20,6 +21,7 @@ export function Experience() {
   const [showAllMedia, setShowAllMedia] = useState(false);
   const [tourMode, setTourMode] = useState(false);
   const [tourIndex, setTourIndex] = useState(0);
+  const [tourPlayback, setTourPlayback] = useState<TourPlaybackState>("idle");
   const [storyIndex, setStoryIndex] = useState(0);
   const [storyMapMode, setStoryMapMode] = useState(false);
   const [storyTargetId, setStoryTargetId] = useState<string | null>(null);
@@ -56,6 +58,20 @@ export function Experience() {
   const { mapContainer, mapInstance, mapFallback, mapReady, mapProgress } = useMinqinMap({ activeLayer, activePoints, onPointActivate: activateMapPoint });
 
   useEffect(() => {
+    if (!tourMode || exhibitModule !== "tour" || tourPlayback !== "playing") return;
+    const timer = window.setTimeout(() => {
+      if (tourIndex === tourChapters.length - 1) {
+        setTourPlayback("completed");
+        return;
+      }
+      goToChapter(tourIndex + 1);
+    }, tourChapters[tourIndex].durationSeconds * 1000);
+    return () => window.clearTimeout(timer);
+    // goToChapter intentionally resets the single chapter timer through tourIndex.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exhibitModule, tourIndex, tourMode, tourPlayback]);
+
+  useEffect(() => {
     const openFromUrl = () => {
       const params = new URLSearchParams(window.location.search);
       const requested = params.get("module") as ExhibitModule | null;
@@ -73,8 +89,10 @@ export function Experience() {
         if (requestedModule === "water") setActiveLayer("water");
         if (requestedModule === "resources") setActiveLayer("herbs");
         setSelectedId(null);
+        setTourPlayback("idle");
         setTourMode(true);
       } else {
+        setTourPlayback("idle");
         setTourMode(false);
         setSelectedId(null);
         if (requestedChapterIndex >= 0) {
@@ -167,15 +185,16 @@ export function Experience() {
   function startTour(initialIndex = 0) {
     const safeIndex = Math.max(0, Math.min(tourChapters.length - 1, initialIndex));
     previousFocus.current = document.activeElement as HTMLElement;
-    setTourIndex(safeIndex); setExhibitModule("tour"); setActiveLayer(tourChapters[safeIndex].layer); setSelectedId(null); setTourMode(true); updateExhibitUrl("tour", safeIndex);
+    setTourIndex(safeIndex); setTourPlayback("idle"); setExhibitModule("tour"); setActiveLayer(tourChapters[safeIndex].layer); setSelectedId(null); setTourMode(true); updateExhibitUrl("tour", safeIndex);
   }
 
   function endTour() {
-    setStoryIndex(tourIndex); setTourMode(false); updateExhibitUrl(null, tourIndex);
+    setStoryIndex(tourIndex); setTourPlayback("idle"); setTourMode(false); updateExhibitUrl(null, tourIndex);
     window.setTimeout(() => { mapInstance.current?.resize(); previousFocus.current?.focus(); }, 90);
   }
 
   function selectExhibitModule(module: ExhibitModule) {
+    if (module !== "tour" && tourPlayback === "playing") setTourPlayback("paused");
     setExhibitModule(module); setSelectedId(null);
     if (module === "tour") setActiveLayer(chapter.layer);
     if (module === "field") setActiveLayer("practice");
@@ -188,6 +207,12 @@ export function Experience() {
     const safeIndex = Math.max(0, Math.min(tourChapters.length - 1, index));
     setTourIndex(safeIndex); setActiveLayer(tourChapters[safeIndex].layer); setSelectedId(null);
     updateExhibitUrl("tour", safeIndex, true);
+  }
+
+  function toggleTourPlayback() {
+    if (tourPlayback === "playing") { setTourPlayback("paused"); return; }
+    if (tourPlayback === "completed") goToChapter(0);
+    setTourPlayback("playing");
   }
 
   function selectTimelineEvent(index: number) { setTimelineIndex(Math.max(0, Math.min(filteredTimelineEvents.length - 1, index))); setActiveLayer("practice"); }
@@ -226,6 +251,6 @@ export function Experience() {
 
   return <main className={[tourMode ? "tour-mode" : "", storyMapMode && !tourMode ? "story-map-mode" : ""].filter(Boolean).join(" ")}>
     <LongFormPage mapSlot={mapSlot} showAllMedia={showAllMedia} onToggleMedia={() => setShowAllMedia((value) => !value)} onStartExhibit={startTour} storyIndex={storyIndex} storyTargetId={storyTargetId} onStoryChapterChange={handleStoryChapterChange} onStoryMapModeChange={handleStoryMapModeChange} onStoryTargetHandled={handleStoryTargetHandled} />
-    {tourMode && <DigitalExhibit panelRef={tourPanel} module={exhibitModule} tourIndex={tourIndex} timelineDay={timelineDay} timelineCategory={timelineCategory} timelineIndex={timelineIndex} waterStageIndex={waterStageIndex} resourceIndex={resourceIndex} resourceSection={resourceSection} resourceView={resourceView} relationshipIndex={relationshipIndex} onEnd={endTour} onSelectModule={selectExhibitModule} onGoChapter={goToChapter} onSetTimelineDay={(day) => { setTimelineDay(day); setTimelineCategory("全部"); setTimelineIndex(0); }} onSetTimelineCategory={(category) => { setTimelineCategory(category); setTimelineIndex(0); }} onSelectTimelineEvent={selectTimelineEvent} onSelectWaterStage={selectWaterStage} onSelectResource={selectResource} onSetResourceSection={setResourceSection} onSetResourceView={setResourceView} onSetRelationshipIndex={setRelationshipIndex} onActivateRelationshipPoint={activateRelationshipPoint} onStep={stepExhibit} onRestart={() => { setTourIndex(0); setTimelineIndex(0); setWaterStageIndex(0); setResourceIndex(0); setRelationshipIndex(0); setExhibitModule("tour"); setActiveLayer(tourChapters[0].layer); setSelectedId(null); updateExhibitUrl("tour", 0, true); }} />}
+    {tourMode && <DigitalExhibit panelRef={tourPanel} module={exhibitModule} tourIndex={tourIndex} playback={tourPlayback} timelineDay={timelineDay} timelineCategory={timelineCategory} timelineIndex={timelineIndex} waterStageIndex={waterStageIndex} resourceIndex={resourceIndex} resourceSection={resourceSection} resourceView={resourceView} relationshipIndex={relationshipIndex} onEnd={endTour} onSelectModule={selectExhibitModule} onGoChapter={goToChapter} onTogglePlayback={toggleTourPlayback} onSetTimelineDay={(day) => { setTimelineDay(day); setTimelineCategory("全部"); setTimelineIndex(0); }} onSetTimelineCategory={(category) => { setTimelineCategory(category); setTimelineIndex(0); }} onSelectTimelineEvent={selectTimelineEvent} onSelectWaterStage={selectWaterStage} onSelectResource={selectResource} onSetResourceSection={setResourceSection} onSetResourceView={setResourceView} onSetRelationshipIndex={setRelationshipIndex} onActivateRelationshipPoint={activateRelationshipPoint} onStep={stepExhibit} onRestart={() => { const shouldResume = tourPlayback === "playing"; setTourIndex(0); setTourPlayback(shouldResume ? "playing" : "idle"); setTimelineIndex(0); setWaterStageIndex(0); setResourceIndex(0); setRelationshipIndex(0); setExhibitModule("tour"); setActiveLayer(tourChapters[0].layer); setSelectedId(null); updateExhibitUrl("tour", 0, true); }} />}
   </main>;
 }
