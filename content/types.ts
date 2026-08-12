@@ -38,8 +38,18 @@ export type StoryPoint = {
   summary: string;
   summaryEn: string;
   mediaIds: string[];
+  evidenceGroups?: PointEvidenceGroup[];
   sourceIds: string[];
   color: string;
+};
+
+export type PointEvidenceGroup = {
+  id: string;
+  label: string;
+  title: string;
+  summary: string;
+  boundary: string;
+  mediaIds: string[];
 };
 
 export type ResourceSectionKey = "habitat" | "ecology" | "cultivation" | "harvest" | "processing" | "communication";

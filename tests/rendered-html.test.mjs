@@ -31,6 +31,31 @@ test("server-renders the first formal release", async () => {
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape|react-loading-skeleton/i);
 });
 
+test("server-renders the five-chapter homepage story spine", async () => {
+  const response = await render();
+  assert.equal(response.status, 200);
+  const html = await response.text();
+  for (const title of ["河西入境", "水写绿洲", "两日实践", "科技与沙产业", "青年守护"]) assert.match(html, new RegExp(title));
+  for (const id of ["hexi-entry", "water-oasis", "field-days", "science-industry", "youth-guardians"]) assert.match(html, new RegExp(`data-chapter="${id}"`));
+  assert.equal((html.match(/data-chapter=/g) ?? []).length, 5);
+  assert.equal((html.match(/进入这一章/g) ?? []).length, 5);
+  for (const action of ["进入数字展框", "自由浏览"]) assert.match(html, new RegExp(action));
+  for (const archiveLabel of ["项目档案", "完整实践影像", "水脉历史切片", "药材资料", "资料与方法说明"]) assert.match(html, new RegExp(archiveLabel));
+
+  const longForm = await readFile(new URL("../app/components/sections/long-form-page.tsx", import.meta.url), "utf8");
+  assert.match(longForm, /tourChapters\.map/);
+  assert.match(longForm, /mediaById\.get\(chapter\.leadMediaId\)/);
+  assert.match(longForm, /onStartExhibit\(index\)/);
+  assert.match(longForm, /new IntersectionObserver/);
+  assert.match(longForm, /aria-current/);
+
+  const experience = await readFile(new URL("../app/components/experience/experience.tsx", import.meta.url), "utf8");
+  assert.match(experience, /params\.get\("chapter"\)/);
+  assert.match(experience, /tourChapters\[chapterIndex\]\.id/);
+  assert.match(experience, /history\.replaceState/);
+  assert.equal((experience.match(/<InteractiveMap\b/g) ?? []).length, 1, "homepage and exhibit must share one InteractiveMap render");
+});
+
 test("keeps content, map, exhibit and page responsibilities separated", async () => {
   await Promise.all(contentFiles.map((file) => access(new URL(`../content/${file}`, import.meta.url))));
   await Promise.all(componentFiles.map((file) => access(new URL(`../app/${file}`, import.meta.url))));
@@ -83,6 +108,19 @@ test("structured datasets retain the expected formal-release counts", async () =
   assert.equal([...media.matchAll(/\{ id: /g)].length, 43);
 });
 
+test("base activity point presents three evidence threads without inventing coordinates", async () => {
+  const points = await readFile(new URL("../content/story-points.ts", import.meta.url), "utf8");
+  const map = await readFile(new URL("../app/components/map/interactive-map.tsx", import.meta.url), "utf8");
+  for (const id of ["heat-prevention-education", "live-aid-attempt", "volunteer-base-evidence"]) assert.match(points, new RegExp(`id: "${id}"`));
+  for (const title of ["中暑预防科普", "直播助农尝试", "志愿基地与治沙技术证据"]) assert.match(points, new RegExp(title));
+  assert.equal((points.match(/coordinates: \[103\.500018, 38\.73236\]/g) ?? []).length, 1, "the three evidence threads must share the verified base point");
+  assert.match(points, /不构成医学诊断、治疗或用药建议/);
+  assert.match(points, /不展示账号、评论、订单、销量或平台数据/);
+  assert.match(points, /不据此虚构培训经历、人物归属或基地边界/);
+  assert.match(map, /selected\.evidenceGroups\.map/);
+  assert.match(map, /现场证据分组/);
+});
+
 test("map archive is a lightweight valid PMTiles package", async () => {
   const packageJson = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
   assert.match(packageJson.dependencies["maplibre-gl"], /^\^?5\./);
@@ -91,6 +129,17 @@ test("map archive is a lightweight valid PMTiles package", async () => {
   assert.ok(archiveStat.size > 500_000 && archiveStat.size < 10_000_000);
   const archive = await readFile(archiveUrl);
   assert.equal(archive.subarray(0, 7).toString("utf8"), "PMTiles");
+});
+
+test("local map style establishes land and road hierarchy", async () => {
+  const config = await readFile(new URL("../app/lib/map-config.ts", import.meta.url), "utf8");
+  const hook = await readFile(new URL("../app/hooks/use-minqin-map.ts", import.meta.url), "utf8");
+  assert.match(config, /layer\.id === "landcover"/);
+  assert.match(config, /other\|service\|taxiway\|pier/);
+  assert.match(config, /minor\|link/);
+  assert.match(config, /"line-opacity": opacity/);
+  assert.match(hook, /practice-route-halo/);
+  assert.match(hook, /"line-width": 2\.2/);
 });
 
 test("maintenance documentation covers the content workflows", async () => {

@@ -41,18 +41,40 @@ export function localMapStyle(tileUrl: string) {
   const light = namedFlavor("light");
   const atlasFlavor = {
     ...light,
-    background: "#bfa36b", earth: "#e1d2aa", sand: "#d5bb80", water: "#4f9eae",
-    park_a: "#a5b77d", park_b: "#8ea66a", wood_a: "#9ead79", wood_b: "#78915f",
-    scrub_a: "#b7bb83", scrub_b: "#9ca26c", boundaries: "#876d47", buildings: "#b69d75",
-    highway_casing_early: "#8c6747", highway_casing_late: "#8c6747", major_casing_early: "#9b7855",
-    major_casing_late: "#9b7855", minor_casing: "#aa8c67", highway: "#fff4d5", major: "#f8e7be",
-    minor_a: "#c7ab7b", minor_b: "#ead7ab", roads_label_major: "#4d3f2d", roads_label_major_halo: "#f4e7c7",
-    city_label: "#263f32", city_label_halo: "#f4e7c7",
-    landcover: light.landcover ? { ...light.landcover, barren: "#cfb981", farmland: "#becb8d", forest: "#819966", grassland: "#adb881", scrub: "#b4b47b", urban_area: "#c8b993" } : undefined,
+    background: "#d8c28d", earth: "#eadfbd", sand: "#dcc58d", water: "#62a7b3",
+    park_a: "#afbd86", park_b: "#96a973", wood_a: "#a1b37b", wood_b: "#829866",
+    scrub_a: "#bdc18f", scrub_b: "#a8ad7d", boundaries: "#9d8b69", buildings: "#bda87f",
+    highway_casing_early: "#9b866c", highway_casing_late: "#9b866c", major_casing_early: "#aa9579",
+    major_casing_late: "#aa9579", minor_casing: "#c4b18c", highway: "#fff8e8", major: "#f4e8cc",
+    minor_a: "#d4c49f", minor_b: "#e7dab9", roads_label_major: "#574b39", roads_label_major_halo: "#f4ecd7",
+    city_label: "#284536", city_label_halo: "#f4ecd7",
+    landcover: light.landcover ? { ...light.landcover, barren: "#d8c695", farmland: "#c7cf9b", forest: "#8fa371", grassland: "#b7c08c", scrub: "#bfc092", urban_area: "#d1c5a7" } : undefined,
   };
+  const atlasLayers = layers("protomaps", atlasFlavor).map((layer) => {
+    if (layer.type === "fill") {
+      if (layer.id === "landcover") return { ...layer, paint: { ...layer.paint, "fill-opacity": 0.58 } };
+      if (layer.id.startsWith("landuse_")) return { ...layer, paint: { ...layer.paint, "fill-opacity": layer.id === "landuse_park" ? 0.48 : 0.24 } };
+      if (layer.id === "buildings") return { ...layer, minzoom: 12.4, paint: { ...layer.paint, "fill-opacity": 0.42 } };
+      return layer;
+    }
+    if (layer.type !== "line") return layer;
+    if (layer.id.startsWith("boundaries")) return { ...layer, paint: { ...layer.paint, "line-opacity": 0.16 } };
+    if (!layer.id.startsWith("roads_")) return layer;
+
+    const isCasing = layer.id.includes("casing");
+    let minzoom = layer.minzoom;
+    let opacity = 0.42;
+    if (/other|service|taxiway|pier/.test(layer.id)) { minzoom = Math.max(minzoom ?? 0, 12); opacity = 0.18; }
+    else if (/minor|link/.test(layer.id)) { minzoom = Math.max(minzoom ?? 0, 10.6); opacity = 0.28; }
+    else if (layer.id.includes("major")) opacity = 0.54;
+    else if (layer.id.includes("highway")) opacity = 0.72;
+    else if (layer.id.includes("rail")) { minzoom = Math.max(minzoom ?? 0, 10); opacity = 0.24; }
+    if (isCasing) opacity *= 0.68;
+    return { ...layer, minzoom, paint: { ...layer.paint, "line-opacity": opacity } };
+  });
   return {
     version: 8 as const,
     sources: { protomaps: { type: "vector" as const, url: `pmtiles://${tileUrl}`, attribution: '<a href="https://www.openstreetmap.org/copyright" target="_blank">© OpenStreetMap contributors</a>' } },
-    layers: layers("protomaps", atlasFlavor),
+    layers: atlasLayers,
   };
 }

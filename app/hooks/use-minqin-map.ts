@@ -79,12 +79,13 @@ export function useMinqinMap({ activeLayer, activePoints, onPointActivate }: Use
           setMapFallback(false);
           setMapProgress(100);
           map.addSource("practice-route", { type: "geojson", data: practiceRoute });
-          map.addLayer({ id: "practice-route-line", type: "line", source: "practice-route", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#d95c3d", "line-width": 3, "line-opacity": 0.78, "line-dasharray": [1, 1.8] } });
+          map.addLayer({ id: "practice-route-halo", type: "line", source: "practice-route", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#fff4dc", "line-width": 6, "line-opacity": 0.34 } });
+          map.addLayer({ id: "practice-route-line", type: "line", source: "practice-route", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#c9563e", "line-width": 2.2, "line-opacity": 0.58, "line-dasharray": [1.2, 2.4] } });
           fieldTracks.forEach((track) => {
             const sourceId = `field-track-${track.id}`;
             const layerId = `${sourceId}-line`;
             map?.addSource(sourceId, { type: "geojson", data: { type: "Feature", properties: { label: track.label, notice: track.notice }, geometry: { type: "LineString", coordinates: track.coordinates } } });
-            map?.addLayer({ id: layerId, type: "line", source: sourceId, layout: { visibility: "visible", "line-cap": "round", "line-join": "round" }, paint: { "line-color": track.color, "line-width": 4, "line-opacity": 0.9, "line-dasharray": [0.25, 1.15] } });
+            map?.addLayer({ id: layerId, type: "line", source: sourceId, layout: { visibility: "visible", "line-cap": "round", "line-join": "round" }, paint: { "line-color": track.color, "line-width": 3, "line-opacity": 0.72, "line-dasharray": [0.25, 1.4] } });
             map?.on("mouseenter", layerId, () => { if (map) map.getCanvas().style.cursor = "pointer"; });
             map?.on("mouseleave", layerId, () => { if (map) map.getCanvas().style.cursor = ""; });
             map?.on("click", layerId, (event) => {
@@ -148,6 +149,7 @@ export function useMinqinMap({ activeLayer, activePoints, onPointActivate }: Use
       markers.current.push(new Marker({ element: button, anchor: "bottom" }).setLngLat(point.coordinates).addTo(map));
     });
     if (map.loaded()) {
+      map.setLayoutProperty("practice-route-halo", "visibility", activeLayer === "practice" ? "visible" : "none");
       map.setLayoutProperty("practice-route-line", "visibility", activeLayer === "practice" ? "visible" : "none");
       fieldTracks.forEach((track) => {
         const layerId = `field-track-${track.id}-line`;
