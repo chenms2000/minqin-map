@@ -2,6 +2,13 @@
 
 每次完成实际维护后，由 Codex 在顶部追加一条简短记录。
 
+## 2026-08-12 - 证据文案减负
+
+- 叙事：五章 eyebrow、narration、首页标题和展框模块说明改为肯定陈述，直接说明历史、水脉、现场与产业关系
+- 边界：GPS 精度继续由 `accuracy`、`locationNote`、图例和方法说明承担；医学与隐私限制集中在基地证据分组；白刺果待核验和项目计划标签保留
+- 校验：移除对“医疗功效”“非采访引语”固定字符串的全站依赖，改为检查结构化医学/隐私边界与计划事实标签
+- 验证：P1 按计划运行 `npm run content:validate` 与 `npm run lint`
+
 ## 2026-08-12 - 一键五章自动导览
 
 - 播放：新增 `idle / playing / paused / completed` 单一状态，五章计时唯一读取 `tourChapters.durationSeconds`，总时长 300 秒

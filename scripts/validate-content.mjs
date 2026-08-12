@@ -109,9 +109,14 @@ const forbidden = [
   [/用户提供地图位点|精确活动坐标|现场采访称/, "未经核验的定位或采访表述"],
 ];
 for (const [pattern, label] of forbidden) if (pattern.test(publishedText)) throw new Error(`隐私与内容边界检查失败：发现${label}`);
-for (const required of ["收成镇兴隆村", "村级近似定位", "GPS实拍点", "非完整轨迹、非导航路线", "不宣传医疗功效", "非采访引语"]) {
+for (const required of ["收成镇兴隆村", "村级近似定位", "GPS实拍点", "非完整轨迹、非导航路线"]) {
   if (!publishedText.includes(required)) throw new Error(`内容边界说明缺失：${required}`);
 }
+const storyPointContent = contentByFile.get("story-points.ts") ?? "";
+if (!/boundary:\s*"[^"]*(?:医学|诊断|治疗|用药)[^"]*"/.test(storyPointContent)) throw new Error("内容边界说明缺失：医学活动边界");
+if (!/boundary:\s*"[^"]*(?:隐私|账号|订单|销量)[^"]*"/.test(storyPointContent)) throw new Error("内容边界说明缺失：平台隐私边界");
+if (!/白刺果[^"\n]*待专业核验|名称待专业核验/.test(publishedText)) throw new Error("内容边界说明缺失：白刺果待专业核验");
+if (!publishedText.includes("项目计划关注")) throw new Error("内容边界说明缺失：项目计划与已完成事实区分");
 
 const archive = path.join(root, "public", "maps", "minqin-2026.pmtiles");
 const archiveStat = await stat(archive);

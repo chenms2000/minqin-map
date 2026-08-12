@@ -114,8 +114,8 @@ test("base activity point presents three evidence threads without inventing coor
   for (const id of ["heat-prevention-education", "live-aid-attempt", "volunteer-base-evidence"]) assert.match(points, new RegExp(`id: "${id}"`));
   for (const title of ["中暑预防科普", "直播助农尝试", "志愿基地与治沙技术证据"]) assert.match(points, new RegExp(title));
   assert.equal((points.match(/coordinates: \[103\.500018, 38\.73236\]/g) ?? []).length, 1, "the three evidence threads must share the verified base point");
-  assert.match(points, /不构成医学诊断、治疗或用药建议/);
-  assert.match(points, /不展示账号、评论、订单、销量或平台数据/);
+  assert.match(points, /boundary: "[^"]*(?:医学|诊断|治疗|用药)[^"]*"/);
+  assert.match(points, /boundary: "[^"]*(?:隐私|账号|订单|销量)[^"]*"/);
   assert.match(points, /不据此虚构培训经历、人物归属或基地边界/);
   assert.match(map, /selected\.evidenceGroups\.map/);
   assert.match(map, /现场证据分组/);
