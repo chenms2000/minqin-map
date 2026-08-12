@@ -39,7 +39,7 @@ test("server-renders the five-chapter homepage story spine", async () => {
   for (const id of ["hexi-entry", "water-oasis", "field-days", "science-industry", "youth-guardians"]) assert.match(html, new RegExp(`data-chapter="${id}"`));
   assert.equal((html.match(/data-chapter=/g) ?? []).length, 5);
   assert.equal((html.match(/进入这一章/g) ?? []).length, 5);
-  for (const action of ["进入数字展框", "自由浏览"]) assert.match(html, new RegExp(action));
+  for (const action of ["开始 5 分钟导览", "进入数字展框", "自由浏览"]) assert.match(html, new RegExp(action));
   for (const archiveLabel of ["项目档案", "完整实践影像", "水脉历史切片", "药材资料", "资料与方法说明"]) assert.match(html, new RegExp(archiveLabel));
 
   const longForm = await readFile(new URL("../app/components/sections/long-form-page.tsx", import.meta.url), "utf8");
@@ -172,6 +172,19 @@ test("derives bidirectional chapter and source evidence indexes", async () => {
   assert.match(exhibit, /本章依据 · EVIDENCE/);
   assert.match(page, /资料来源与反向索引/);
   assert.match(page, /支撑：/);
+});
+
+test("homepage starts continuous playback and exposes a complete keyboard and exit loop", async () => {
+  const experience = await readFile(new URL("../app/components/experience/experience.tsx", import.meta.url), "utf8");
+  const exhibit = await readFile(new URL("../app/components/exhibit/digital-exhibit.tsx", import.meta.url), "utf8");
+  const page = await readFile(new URL("../app/components/sections/long-form-page.tsx", import.meta.url), "utf8");
+  assert.match(page, /onStartExhibit\(0, true\)/);
+  assert.match(page, /开始 5 分钟导览/);
+  assert.match(experience, /event\.code === "Space"/);
+  assert.match(experience, /window\.setInterval/);
+  assert.match(experience, /totalTourSeconds/);
+  assert.match(exhibit, /tour-total-progress/);
+  for (const action of ["自由探索地图", "查看资料依据"]) assert.match(exhibit, new RegExp(action));
 });
 
 test("maintenance documentation covers the content workflows", async () => {

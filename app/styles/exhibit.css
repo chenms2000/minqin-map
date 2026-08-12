@@ -83,6 +83,13 @@
 .tour-playback button { min-width: 72px; padding: 8px 12px; border: 1px solid #e5c57e; color: #14251d; background: #e5c57e; cursor: pointer; font-size: 8px; }
 .tour-playback span { color: rgba(255,255,255,.62); font-size: 8px; letter-spacing: .04em; }
 .tour-playback.is-completed span { color: #e5c57e; }
+.tour-total-progress { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; }
+.tour-total-progress > i { height: 3px; overflow: hidden; background: rgba(255,255,255,.14); }
+.tour-total-progress > i b { display: block; height: 100%; background: #e5c57e; transition: width .35s linear; }
+.tour-total-progress small { color: rgba(255,255,255,.5); font-size: 7px; font-style: normal; }
+.tour-complete-actions { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.tour-playback .tour-complete-actions button { min-width: 0; color: #e5c57e; background: transparent; }
+.tour-playback .tour-complete-actions button:first-child { color: #14251d; background: #e5c57e; }
 .tour-controls button { padding: 8px 10px; border: 1px solid rgba(255,255,255,.25); color: #fff; background: transparent; cursor: pointer; font-size: 8px; }
 .tour-controls button:last-child { color: #14251d; background: #e5c57e; border-color: #e5c57e; }
 .tour-controls button:disabled { opacity: .25; cursor: default; }

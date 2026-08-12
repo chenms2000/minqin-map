@@ -28,6 +28,8 @@ type DigitalExhibitProps = {
   module: ExhibitModule;
   tourIndex: number;
   playback: TourPlaybackState;
+  elapsedSeconds: number;
+  totalSeconds: number;
   timelineDay: TimelineDay;
   timelineCategory: TimelineCategory | "全部";
   timelineIndex: number;
@@ -40,6 +42,8 @@ type DigitalExhibitProps = {
   onSelectModule: (module: ExhibitModule) => void;
   onGoChapter: (index: number) => void;
   onTogglePlayback: () => void;
+  onExploreMap: () => void;
+  onViewEvidence: () => void;
   onSetTimelineDay: (day: TimelineDay) => void;
   onSetTimelineCategory: (category: TimelineCategory | "全部") => void;
   onSelectTimelineEvent: (index: number) => void;
@@ -54,7 +58,7 @@ type DigitalExhibitProps = {
 };
 
 export function DigitalExhibit(props: DigitalExhibitProps) {
-  const { panelRef, module, tourIndex, playback, timelineDay, timelineCategory, timelineIndex, waterStageIndex, resourceIndex, resourceSection, resourceView, relationshipIndex } = props;
+  const { panelRef, module, tourIndex, playback, elapsedSeconds, totalSeconds, timelineDay, timelineCategory, timelineIndex, waterStageIndex, resourceIndex, resourceSection, resourceView, relationshipIndex } = props;
   const touchStartX = useRef<number | null>(null);
   const filteredEvents = useMemo(() => timelineEvents.filter((event) => event.day === timelineDay && (timelineCategory === "全部" || event.category === timelineCategory)), [timelineCategory, timelineDay]);
   const chapter = tourChapters[tourIndex];
@@ -66,6 +70,7 @@ export function DigitalExhibit(props: DigitalExhibitProps) {
   const waterStage = waterStages[waterStageIndex];
   const resource = herbs[resourceIndex];
   const relationship = relationshipEdges[relationshipIndex];
+  const tourProgress = Math.min(100, Math.round((elapsedSeconds / totalSeconds) * 100));
 
   function handleTouchStart(event: React.TouchEvent) { touchStartX.current = event.changedTouches[0]?.clientX ?? null; }
   function handleTouchEnd(event: React.TouchEvent) {
@@ -94,8 +99,8 @@ export function DigitalExhibit(props: DigitalExhibitProps) {
       {module === "resources" && <div className="resource-cabinet"><div className="exhibit-heading"><p>DESERT RESOURCE CABINET</p><h2>药材标本柜</h2><span>从沙生资源到生态产业，展开生境、种植与传播关系。</span></div><div className="resource-view-switch"><button className={resourceView === "specimen" ? "active" : ""} onClick={() => props.onSetResourceView("specimen")}>互动标本</button><button className={resourceView === "relations" ? "active" : ""} onClick={() => props.onSetResourceView("relations")}>关系演示</button></div>{resourceView === "specimen" ? <><div className="specimen-tabs" role="tablist" aria-label="药材资源">{herbs.map((herb, index) => <button key={herb.id} role="tab" aria-selected={index === resourceIndex} className={index === resourceIndex ? "active" : ""} onClick={() => props.onSelectResource(index)}><span>0{index + 1}</span>{herb.name}</button>)}</div><article className="specimen-sheet"><div className="specimen-stamp">{resource.evidenceLabel}</div><p>{resource.tag}</p><h3>{resource.name}</h3><em>{resource.latinLabel}</em><div className="resource-sections">{resourceSectionMeta.map((section) => <button key={section.id} className={resourceSection === section.id ? "active" : ""} onClick={() => props.onSetResourceSection(section.id)}>{section.label}</button>)}</div><div className="resource-section-copy"><strong>{resourceSectionMeta.find((item) => item.id === resourceSection)?.label}</strong><p>{resource.sections[resourceSection]}</p></div><button className="map-link" onClick={() => props.onActivateRelationshipPoint(resource.mapPointId)}>在地图中查看关联节点 →</button></article></> : <div className="relation-view"><div className="relation-network" aria-label="生态关系演示">{relationshipEdges.map((edge, index) => <button key={edge.id} className={index === relationshipIndex ? "active" : ""} onClick={() => props.onSetRelationshipIndex(index)}><span>{storyPointById.get(edge.fromPointId)?.title}</span><b>{edge.label}</b><span>{storyPointById.get(edge.toPointId)?.title}</span></button>)}</div><article className="relation-detail"><p>关系 {relationshipIndex + 1} / {relationshipEdges.length}</p><h3>{relationship.label}</h3><p>{relationship.explanation}</p><div><button onClick={() => props.onActivateRelationshipPoint(relationship.fromPointId)}>定位起点</button><button onClick={() => props.onActivateRelationshipPoint(relationship.toPointId)}>定位终点</button></div></article></div>}</div>}
     </div>
 
-    {module === "tour" && <div className={`tour-playback is-${playback}`} role="status"><button onClick={props.onTogglePlayback}>{playback === "playing" ? "暂停" : playback === "paused" ? "继续" : playback === "completed" ? "重新播放" : "自动播放"}</button><span>{playback === "playing" ? `正在播放第 ${tourIndex + 1} 章 · ${formatDuration(chapter.durationSeconds)}` : playback === "paused" ? `已暂停在第 ${tourIndex + 1} 章` : playback === "completed" ? "五章导览已完成" : "一键连续播放完整五章 · 5 分钟"}</span></div>}
-    <div className="tour-controls exhibit-controls"><button onClick={() => props.onStep(-1)} disabled={(module === "tour" && tourIndex === 0) || (module === "field" && timelineIndex === 0) || (module === "water" && waterStageIndex === 0) || (module === "resources" && resourceView === "specimen" && resourceIndex === 0) || (module === "resources" && resourceView === "relations" && relationshipIndex === 0)}>← 上一个</button><span>键盘 ← → · 左右轻扫 · Esc 退出</span><button onClick={() => props.onStep(1)} disabled={module === "tour" && tourIndex === tourChapters.length - 1}>下一个 →</button></div>
+    {module === "tour" && <div className={`tour-playback is-${playback}`} role="status"><button onClick={props.onTogglePlayback}>{playback === "playing" ? "暂停" : playback === "paused" ? "继续" : playback === "completed" ? "重新播放" : "自动播放"}</button><span>{playback === "playing" ? `正在播放第 ${tourIndex + 1} 章` : playback === "paused" ? `已暂停在第 ${tourIndex + 1} 章` : playback === "completed" ? "五章导览已完成" : "一键连续播放完整五章 · 5 分钟"}</span><div className="tour-total-progress" aria-label={`导览总进度 ${tourProgress}%`}><i><b style={{ width: `${tourProgress}%` }} /></i><small>{formatDuration(elapsedSeconds)} / {formatDuration(totalSeconds)}</small></div>{playback === "completed" && <div className="tour-complete-actions"><button onClick={props.onExploreMap}>自由探索地图</button><button onClick={props.onViewEvidence}>查看资料依据</button></div>}</div>}
+    <div className="tour-controls exhibit-controls"><button onClick={() => props.onStep(-1)} disabled={(module === "tour" && tourIndex === 0) || (module === "field" && timelineIndex === 0) || (module === "water" && waterStageIndex === 0) || (module === "resources" && resourceView === "specimen" && resourceIndex === 0) || (module === "resources" && resourceView === "relations" && relationshipIndex === 0)}>← 上一个</button><span>空格播放/暂停 · ← → 跳章 · Esc 退出</span><button onClick={() => props.onStep(1)} disabled={module === "tour" && tourIndex === tourChapters.length - 1}>下一个 →</button></div>
     {module === "tour" && <div className="exhibit-rail" aria-label={`第${tourIndex + 1}章，共${tourChapters.length}章`}>{tourChapters.map((item, index) => <button key={item.id} className={index === tourIndex ? "active" : ""} onClick={() => props.onGoChapter(index)} aria-label={`跳至第${index + 1}章 ${item.title}`}><i>{String(index + 1).padStart(2, "0")}</i><span>{item.title}</span></button>)}</div>}
     <button className="restart-exhibit" onClick={props.onRestart}>重新开始</button>
   </aside>;

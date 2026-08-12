@@ -183,6 +183,7 @@
   .tour-controls { padding: 8px 12px; }
   .tour-playback { padding: 7px 12px; }
   .tour-playback span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .tour-complete-actions button { min-height: 36px; }
   .tour-controls span { display: none; }
   .tour-controls { grid-template-columns: 1fr 1fr; }
   .exhibit-rail button { padding-block: 6px; }
