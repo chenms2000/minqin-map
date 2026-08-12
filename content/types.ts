@@ -96,6 +96,15 @@ export type ResourceProfile = {
   descriptionEn: string;
   sourceIds: string[];
   mapPointId: string;
+  image: {
+    src: string;
+    alt: string;
+    caption: string;
+    credit: string;
+    license: string;
+    sourceUrl: string;
+  };
+  facts: Array<{ label: string; value: string }>;
   sections: Record<ResourceSectionKey, string>;
 };
 

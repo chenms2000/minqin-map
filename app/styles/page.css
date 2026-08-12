@@ -302,3 +302,23 @@ footer { color: var(--ink); background: #e5ddcd; }
 .method-note p, .footer-note p { color: var(--text-muted); font-size: 11px; }
 .footer-note { border-top-color: var(--line); }
 
+/* Source-backed herb archive */
+.herb-grid article { min-height: 0; padding: 0; }
+.herb-image { position: relative; height: 240px; margin: 0; overflow: hidden; background: #d6ccb2; }
+.herb-image img { width: 100%; height: 100%; display: block; object-fit: cover; transition: transform .4s ease; }
+.herb-grid article:hover .herb-image img { transform: scale(1.025); }
+.herb-image figcaption { position: absolute; inset: auto 0 0; display: grid; gap: 2px; padding: 30px 14px 11px; color: rgba(255,255,255,.86); background: linear-gradient(transparent, rgba(9,20,13,.88)); font-size: 9px; line-height: 1.45; }
+.herb-image figcaption a { width: fit-content; color: var(--sand); text-decoration: none; }
+.herb-card-copy { padding: 22px 22px 26px; }
+.herb-card-copy .herb-number { display: inline-block; }
+.herb-card-copy .herb-evidence { position: static; display: inline-block; margin-left: 10px; vertical-align: middle; }
+.herb-card-copy .herb-tag { position: static; float: right; }
+.herb-grid .herb-card-copy h3 { clear: both; margin-top: 34px; }
+.herb-grid .herb-card-copy em { margin-bottom: 20px; }
+.herb-facts { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 6px; margin-top: 20px; }
+.herb-facts > span { min-width: 0; padding: 10px 7px; border-top: 1px solid rgba(23,32,24,.16); }
+.herb-facts small { display: block; margin: 0 0 5px; font-family: inherit; font-size: 8px; }
+.herb-facts strong { display: block; color: var(--oasis); font-family: var(--serif); font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+.herb-source-links { display: grid; gap: 6px; margin-top: 18px; }
+.herb-source-links a { color: var(--oasis); font-size: 9px; line-height: 1.45; text-decoration: none; }
+

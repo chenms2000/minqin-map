@@ -266,6 +266,8 @@
   .event-readout, .timeline-range, .event-strip { padding-inline: 20px; }
   .water-visual { height: 86px; margin-inline: 20px; }
   .water-readout, .specimen-tabs, .specimen-sheet { margin-inline: 20px; }
+  .specimen-intro { grid-template-columns: 150px minmax(0,1fr); gap: 14px; }
+  .specimen-portrait img { height: 170px; }
   .relation-view { padding-inline: 20px; }
   .tour-playback-bar { grid-template-columns: 76px 42px minmax(88px, 1fr) 42px; min-height: 68px; gap: 5px; padding: 8px; }
   .tour-playback-bar .play-toggle { min-width: 0; padding-inline: 7px; }
@@ -285,4 +287,9 @@
   .module-tour { grid-template-rows: minmax(118px, 38%) minmax(0, 1fr); }
   .tour-copy h2 { font-size: clamp(28px, 8.6vw, 35px); }
   .tour-playback-bar { grid-template-columns: 70px 40px minmax(74px, 1fr) 40px; }
+  .specimen-intro { grid-template-columns: 1fr; }
+  .specimen-portrait img { height: 180px; }
+  .specimen-facts { grid-template-columns: repeat(3, minmax(0,1fr)); }
+  .specimen-facts div { display: block; }
+  .specimen-facts strong { display: block; margin-top: 4px; text-align: left; }
 }

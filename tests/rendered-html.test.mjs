@@ -106,6 +106,8 @@ test("structured datasets retain the expected formal-release counts", async () =
   assert.equal([...water.matchAll(/id: "water-/g)].length, 4);
   assert.equal([...resources.matchAll(/id: "relation-/g)].length, 4);
   assert.equal([...resources.matchAll(/mapPointId: /g)].length, 4);
+  assert.equal([...resources.matchAll(/image: \{/g)].length, 4);
+  assert.doesNotMatch(resources, /项目计划关注|待调研问题|等待后续公开资料|尚无团队基地调研数据/);
   assert.equal([...scenes.matchAll(/id: /g)].length, 5);
   assert.equal([...media.matchAll(/featured: true/g)].length, 18);
   assert.equal([...media.matchAll(/\{ id: /g)].length, 43);
@@ -113,6 +115,10 @@ test("structured datasets retain the expected formal-release counts", async () =
   assert.equal([...sources.matchAll(/kind: /g)].length, [...sources.matchAll(/\{ id: /g)].length);
   assert.equal([...sources.matchAll(/topics: /g)].length, [...sources.matchAll(/\{ id: /g)].length);
   assert.equal([...sources.matchAll(/summary: /g)].length, [...sources.matchAll(/\{ id: /g)].length);
+  for (const image of ["licorice.jpg", "cistanche.jpg", "cynomorium.jpg", "isatis.jpg"]) {
+    const imageStat = await stat(new URL(`../public/media/resources/${image}`, import.meta.url));
+    assert.ok(imageStat.size > 100_000, `${image} should be a real, non-placeholder photograph`);
+  }
 });
 
 test("base activity point presents three evidence threads without inventing coordinates", async () => {

@@ -133,7 +133,13 @@ if (!/boundary:\s*"[^"]*(?:隐私|账号|订单|销量)[^"]*"/.test(storyPointCo
 if (/白刺果[^"\n]*(?:待专业核验|待核验)|名称待专业核验/.test(publishedText)) throw new Error("白刺果已确认，不应继续显示待核验表述");
 if (!publishedText.includes('title: "白刺果采摘观察"')) throw new Error("白刺果确认名称缺失");
 if (!publishedText.includes("哈密瓜")) throw new Error("直播农产品应标记为哈密瓜");
-if (!publishedText.includes("项目计划关注")) throw new Error("内容边界说明缺失：项目计划与已完成事实区分");
+const resourceContent = contentByFile.get("resources.ts") ?? "";
+for (const placeholder of ["项目计划关注", "待调研问题", "等待后续公开资料", "尚无团队基地调研数据"]) {
+  if (resourceContent.includes(placeholder)) throw new Error(`药材标本仍含占位表述：${placeholder}`);
+}
+for (const required of ["minqin-herb-harvest-2020", "cynomorium-cas", "cynomorium-genetics-2018", "/media/resources/licorice.jpg", "/media/resources/cistanche.jpg", "/media/resources/cynomorium.jpg", "/media/resources/isatis.jpg"]) {
+  if (!allContent.includes(required)) throw new Error(`药材实证内容缺失：${required}`);
+}
 
 const archive = path.join(root, "public", "maps", "minqin-2026.pmtiles");
 const archiveStat = await stat(archive);
