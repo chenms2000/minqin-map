@@ -1,13 +1,20 @@
 import type { SourceRef } from "./types";
 
 export const sources: SourceRef[] = [
-  { id: "hexi-history", publisher: "丝绸之路（敦煌）国际文化博览会", title: "一条河西走廊，何以串起千年文明？", url: "https://www.gswbj.gov.cn/a/2023/09/21/18697.html", publishedAt: "2023-09-21" },
-  { id: "minqin-ecology", publisher: "国家林业和草原局", title: "民勤：漠上绿洲生生不息", url: "https://www.forestry.gov.cn/c/www/xxgcjqdxal/513785.jhtml", publishedAt: "2023-07-12" },
-  { id: "system-restoration", publisher: "国家林业和草原局", title: "民勤系统治沙与石羊河流域治理实践", url: "https://www.forestry.gov.cn/c/www/xxgcjqdxal/547094.jhtml", publishedAt: "公开资料" },
-  { id: "desert-garden", publisher: "国家林业和草原局", title: "甘肃民勤沙生植物园守护荒漠植物资源", url: "https://www.forestry.gov.cn/lyj/1/lhgzdt/20260611/675938.html", publishedAt: "2026-06-11" },
-  { id: "desert-institute", publisher: "国家林业和草原局", title: "甘肃省治沙研究所民勤治沙研究", url: "https://www.forestry.gov.cn/c/www/sbjs/586525.jhtml", publishedAt: "公开资料" },
-  { id: "minqin-volunteers", publisher: "人民网甘肃频道", title: "‘请到民勤种棵树’，缘何吸引数万青年志愿者", url: "https://gs.people.com.cn/BIG5/n2/2026/0508/c358184-41574026.html", publishedAt: "2026-05-08" },
-  { id: "minqin-base-report", publisher: "国家林业和草原局（来源：新华网）", title: "跨越山海种树护绿", url: "https://www.forestry.gov.cn/lyj/1/dfdt/20260423/668473.html", publishedAt: "2026-04-23" },
-  { id: "cistanche-industry", publisher: "中国生态文明网", title: "民勤梭梭—肉苁蓉生态沙产业资料", url: "https://www.eco.gov.cn/news_info/28258.html", publishedAt: "公开资料" },
+  { id: "hexi-history", publisher: "丝绸之路（敦煌）国际文化博览会", title: "一条河西走廊，何以串起千年文明？", url: "https://www.gswbj.gov.cn/a/2023/09/21/18697.html", publishedAt: "2023-09-21", kind: "government", topics: ["河西走廊", "丝绸之路"], summary: "支撑河西走廊作为历史文化通道的章节背景。" },
+  { id: "minqin-ecology", publisher: "国家林业和草原局", title: "民勤：漠上绿洲生生不息", url: "https://www.forestry.gov.cn/c/www/xxgcjqdxal/513785.jhtml", publishedAt: "2023-07-12", kind: "government", topics: ["青土湖", "生态输水", "治沙"], summary: "支撑青土湖干涸、重现水面与阶段性水域数据。" },
+  { id: "system-restoration", publisher: "国家林业和草原局", title: "民勤系统治沙与石羊河流域治理实践", url: "https://www.forestry.gov.cn/c/www/xxgcjqdxal/547094.jhtml", publishedAt: "公开资料", kind: "government", topics: ["石羊河", "系统治理"], summary: "支撑石羊河流域节水、输水、固沙和植被修复的协同关系。" },
+  { id: "desert-garden", publisher: "国家林业和草原局", title: "甘肃民勤沙生植物园守护荒漠植物资源", url: "https://www.forestry.gov.cn/lyj/1/lhgzdt/20260611/675938.html", publishedAt: "2026-06-11", kind: "government", topics: ["沙生植物", "种质资源", "科研"], summary: "支撑民勤沙生植物资源保护与科研背景。" },
+  { id: "desert-institute", publisher: "国家林业和草原局", title: "甘肃省治沙研究所民勤治沙研究", url: "https://www.forestry.gov.cn/c/www/sbjs/586525.jhtml", publishedAt: "公开资料", kind: "research", topics: ["治沙科研", "长期观测"], summary: "支撑民勤治沙科研、观测与技术积累。" },
+  { id: "minqin-volunteers", publisher: "人民网甘肃频道", title: "‘请到民勤种棵树’，缘何吸引数万青年志愿者", url: "https://gs.people.com.cn/BIG5/n2/2026/0508/c358184-41574026.html", publishedAt: "2026-05-08", kind: "media", topics: ["青年志愿者", "公益治沙"], summary: "支撑青年志愿者长期参与民勤种植与养护的背景。" },
+  { id: "minqin-base-report", publisher: "国家林业和草原局（来源：新华网）", title: "跨越山海种树护绿", url: "https://www.forestry.gov.cn/lyj/1/dfdt/20260423/668473.html", publishedAt: "2026-04-23", kind: "media", topics: ["公益林", "青年行动"], summary: "支撑跨地区青年参与公益林建设与后续维护。" },
+  { id: "cistanche-industry", publisher: "中国生态文明网", title: "民勤梭梭—肉苁蓉生态沙产业资料", url: "https://www.eco.gov.cn/news_info/28258.html", publishedAt: "公开资料", kind: "organization", topics: ["梭梭", "肉苁蓉", "沙产业"], summary: "支撑梭梭固沙与肉苁蓉资源利用的生态产业联系。" },
+  { id: "system-governance-2023", publisher: "国家林业和草原局", title: "民勤治沙走进系统治理的高质量发展阶段", url: "https://www.forestry.gov.cn/c/www/lhgzdt/525542.jhtml", publishedAt: "2023-09-27", kind: "government", topics: ["系统治理", "青土湖", "三北工程"], summary: "支撑民勤从单项治沙走向流域、植被与锁边协同治理。" },
+  { id: "oasis-control-model-2025", publisher: "国家林业和草原局", title: "甘肃民勤绿洲治沙模式", url: "https://www.forestry.gov.cn/c/www/lhgzdt/629877.jhtml", publishedAt: "2025-06-11", kind: "government", topics: ["环绿洲锁边", "系统治理", "生态屏障"], summary: "支撑环绿洲锁边、分区治理与科技治沙模式。" },
+  { id: "shiyang-beautiful-river-2022", publisher: "生态环境部", title: "石羊河（武威段）", url: "https://www.mee.gov.cn/home/ztbd/2021/mlhhyxalzjhd/tmal/202201/t20220127_968348.shtml", publishedAt: "2022-01-24", kind: "government", topics: ["石羊河", "河湖治理", "生态恢复"], summary: "支撑红崖山水库至青土湖河岸带与流域生态治理成效。" },
+  { id: "shiyang-plan-2008", publisher: "国家发展和改革委员会", title: "国务院批复石羊河流域治理规划", url: "https://www.ndrc.gov.cn/fzggw/jgsj/ghs/sjdt/200802/t20080229_1169770.html", publishedAt: "2008-02-29", kind: "government", topics: ["石羊河", "治理规划", "政策"], summary: "支撑流域重点治理的政策起点、目标与综合措施。" },
+  { id: "qingtu-rebirth-2024", publisher: "国家林业和草原局（来源：光明网）", title: "‘三北’工程攻坚战｜甘肃青土湖：沙漠湖泊‘重生记’", url: "https://www.forestry.gov.cn/lyj/1/xxbd/20240529/565322.html", publishedAt: "2024-05-29", kind: "media", topics: ["青土湖", "生态输水", "三北工程"], summary: "支撑青土湖1959年干涸、2010年重现水面与生态恢复叙事。" },
+  { id: "young-tree-planters-2025", publisher: "人民网", title: "一群年轻人，去民勤种树", url: "http://society.people.com.cn/n1/2025/0516/c428181-40480841.html", publishedAt: "2025-05-16", kind: "media", topics: ["兴隆村", "青年志愿者", "公益林"], summary: "支撑兴隆村青年种树、志愿行动与后续养护背景。" },
+  { id: "desert-food-industry-2024", publisher: "国家林业和草原局三北局", title: "向沙地要食物，实现绿富共赢", url: "https://www.forestry.gov.cn/c/sbj/stcy/584857.jhtml", publishedAt: "2024-09-09", kind: "government", topics: ["梭梭", "肉苁蓉", "生态产业"], summary: "支撑民勤梭梭接种肉苁蓉及生态与产业协同关系。" },
+  { id: "sand-control-tech-2026", publisher: "国家林业和草原局（来源：人民日报）", title: "甘肃民勤县治理荒漠化用上新技术", url: "https://www.forestry.gov.cn/lyj/1/jdyw/20260714/680553.html", publishedAt: "2026-07-14", kind: "media", topics: ["治沙技术", "科研", "荒漠化治理"], summary: "支撑民勤新型治沙材料、技术试验与科研转化背景。" },
 ];
-

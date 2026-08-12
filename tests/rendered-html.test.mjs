@@ -92,6 +92,7 @@ test("ships curated dated media, local map and social card", async () => {
 });
 
 test("structured datasets retain the expected formal-release counts", async () => {
+  const sources = await readFile(new URL("../content/sources.ts", import.meta.url), "utf8");
   const media = await readFile(new URL("../content/media.ts", import.meta.url), "utf8");
   const timeline = await readFile(new URL("../content/field-timeline.ts", import.meta.url), "utf8");
   const water = await readFile(new URL("../content/water-stages.ts", import.meta.url), "utf8");
@@ -106,6 +107,10 @@ test("structured datasets retain the expected formal-release counts", async () =
   assert.equal([...scenes.matchAll(/id: /g)].length, 5);
   assert.equal([...media.matchAll(/featured: true/g)].length, 18);
   assert.equal([...media.matchAll(/\{ id: /g)].length, 43);
+  assert.ok([...sources.matchAll(/\{ id: /g)].length >= 16);
+  assert.equal([...sources.matchAll(/kind: /g)].length, [...sources.matchAll(/\{ id: /g)].length);
+  assert.equal([...sources.matchAll(/topics: /g)].length, [...sources.matchAll(/\{ id: /g)].length);
+  assert.equal([...sources.matchAll(/summary: /g)].length, [...sources.matchAll(/\{ id: /g)].length);
 });
 
 test("base activity point presents three evidence threads without inventing coordinates", async () => {

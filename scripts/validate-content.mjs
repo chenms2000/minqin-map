@@ -24,6 +24,11 @@ const mediaIds = idSet("media.ts");
 const pointIds = idSet("story-points.ts");
 const allDefinitions = entries.flatMap(([name, text]) => idsIn(text).map((id) => ({ id, name })));
 
+if (sourceIds.size < 16) throw new Error(`公开来源至少需要 16 项，当前为 ${sourceIds.size} 项`);
+for (const line of (contentByFile.get("sources.ts") ?? "").split("\n").filter((item) => item.includes('{ id: "'))) {
+  for (const field of ["kind", "topics", "summary"]) if (!line.includes(`${field}:`)) throw new Error(`来源元数据缺失 ${field}：${line.match(/id: "([^"]+)"/)?.[1] ?? "unknown"}`);
+}
+
 const duplicates = allDefinitions.filter((item, index) => allDefinitions.findIndex((candidate) => candidate.id === item.id) !== index);
 if (duplicates.length) throw new Error(`重复内容 ID：${[...new Set(duplicates.map((item) => item.id))].join("、")}`);
 
@@ -53,6 +58,7 @@ for (const match of allContent.matchAll(/pointIds:\s*\[([^\]]*)\]/g)) {
   }
 }
 assertReferences(/leadMediaId:\s*"([^"]+)"/g, mediaIds, "主媒体");
+assertReferences(/sourceId:\s*"([^"]+)"/g, sourceIds, "来源");
 assertReferences(/mediaId:\s*"([^"]+)"/g, mediaIds, "时间线媒体");
 assertReferences(/(?:storyPointId|mapPointId|pointId|fromPointId|toPointId):\s*"([^"]+)"/g, pointIds, "点位");
 
