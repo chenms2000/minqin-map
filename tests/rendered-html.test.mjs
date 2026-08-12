@@ -16,6 +16,8 @@ const componentFiles = [
   "components/experience/experience.tsx",
   "components/map/interactive-map.tsx",
   "components/exhibit/digital-exhibit.tsx",
+  "components/exhibit/exhibit-chrome.tsx",
+  "components/exhibit/tour-stage.tsx",
   "components/sections/long-form-page.tsx",
   "hooks/use-minqin-map.ts",
   "lib/map-config.ts",
@@ -149,7 +151,7 @@ test("local map style establishes land and road hierarchy", async () => {
 
 test("guided tour derives its timeline from unique frame media durations", async () => {
   const experience = await readFile(new URL("../app/components/experience/experience.tsx", import.meta.url), "utf8");
-  const exhibit = await readFile(new URL("../app/components/exhibit/digital-exhibit.tsx", import.meta.url), "utf8");
+  const exhibit = (await Promise.all(["digital-exhibit.tsx", "exhibit-chrome.tsx", "tour-stage.tsx"].map((name) => readFile(new URL(`../app/components/exhibit/${name}`, import.meta.url), "utf8")))).join("\n");
   const evidence = await readFile(new URL("../content/evidence-index.ts", import.meta.url), "utf8");
   assert.match(evidence, /TEXT_FRAME_SECONDS = 4/);
   assert.match(evidence, /SOURCE_FRAME_SECONDS = 7/);
@@ -177,7 +179,7 @@ test("derives bidirectional chapter and source evidence indexes", async () => {
 
 test("homepage starts continuous playback and exposes a complete keyboard and exit loop", async () => {
   const experience = await readFile(new URL("../app/components/experience/experience.tsx", import.meta.url), "utf8");
-  const exhibit = await readFile(new URL("../app/components/exhibit/digital-exhibit.tsx", import.meta.url), "utf8");
+  const exhibit = (await Promise.all(["digital-exhibit.tsx", "exhibit-chrome.tsx"].map((name) => readFile(new URL(`../app/components/exhibit/${name}`, import.meta.url), "utf8")))).join("\n");
   const page = await readFile(new URL("../app/components/sections/long-form-page.tsx", import.meta.url), "utf8");
   assert.match(page, /onStartExhibit\(0, true\)/);
   assert.match(page, /开始自动导览/);
@@ -191,17 +193,32 @@ test("homepage starts continuous playback and exposes a complete keyboard and ex
 test("continuous tour rotates map points, media, video and source text as derived frames", async () => {
   const evidence = await readFile(new URL("../content/evidence-index.ts", import.meta.url), "utf8");
   const experience = await readFile(new URL("../app/components/experience/experience.tsx", import.meta.url), "utf8");
-  const exhibit = await readFile(new URL("../app/components/exhibit/digital-exhibit.tsx", import.meta.url), "utf8");
+  const exhibit = (await Promise.all(["digital-exhibit.tsx", "tour-stage.tsx"].map((name) => readFile(new URL(`../app/components/exhibit/${name}`, import.meta.url), "utf8")))).join("\n");
   assert.match(evidence, /chapterFramesById/);
   for (const kind of ["intro", "point", "media", "source"]) assert.match(evidence, new RegExp(`kind: "${kind}"`));
   assert.match(evidence, /asset\.type !== "video"/);
   assert.match(experience, /activeTourFrameIndex/);
   assert.match(evidence, /claimTourMedia/);
   assert.match(experience, /activeTourPoint\.coordinates/);
-  assert.match(exhibit, /autoPlay=\{playback === "playing"\}/);
+  assert.match(exhibit, /autoPlay=\{isPlaying\}/);
   assert.match(exhibit, /muted playsInline preload/);
   assert.doesNotMatch(exhibit, /playsInline loop/);
   assert.doesNotMatch(exhibit, /见视频下方文字|自动分镜 · AUTO STORYBOARD/);
+});
+
+test("museum-documentary UI derives exhibit labels and keeps one persistent control layer", async () => {
+  const types = await readFile(new URL("../content/types.ts", import.meta.url), "utf8");
+  const stage = await readFile(new URL("../app/components/exhibit/tour-stage.tsx", import.meta.url), "utf8");
+  const chrome = await readFile(new URL("../app/components/exhibit/exhibit-chrome.tsx", import.meta.url), "utf8");
+  const exhibit = await readFile(new URL("../app/components/exhibit/digital-exhibit.tsx", import.meta.url), "utf8");
+  const css = await readFile(new URL("../app/styles/exhibit.css", import.meta.url), "utf8");
+  assert.match(types, /"media" \| "source" \| "data" \| "specimen"/);
+  assert.match(stage, /deriveExhibitVisualType/);
+  assert.match(stage, /data-visual-type/);
+  for (const label of ["资料展签", "查看原文", "探索工具", "剩余", "上一页", "下一页"]) assert.match(`${stage}\n${chrome}`, new RegExp(label));
+  assert.match(exhibit, /TourPlaybackBar/);
+  assert.doesNotMatch(exhibit, /tour-controls exhibit-controls/);
+  assert.match(css, /grid-template-columns: auto auto minmax\(120px, 1fr\) auto/);
 });
 
 test("confirmed field labels use white thorn fruit and Hami melon consistently", async () => {

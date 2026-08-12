@@ -2,21 +2,15 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import { useMemo, useRef, type RefObject } from "react";
+import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { chapterFramesById, herbs, mediaById, relationshipEdges, sourceById, storyPointById, timelineCategories, timelineEvents, tourChapters, waterStages, type ResourceSectionKey, type TimelineCategory } from "@/content";
-import { formatDuration } from "@/app/lib/formatters";
 import type { TourPlaybackState } from "@/app/components/experience/experience";
+import { ExhibitHeader, ExhibitNavigationBar, ExploreMenu, TourPlaybackBar } from "@/app/components/exhibit/exhibit-chrome";
+import { TourStage } from "@/app/components/exhibit/tour-stage";
 
 export type ExhibitModule = "tour" | "field" | "water" | "resources";
 export type ResourceView = "specimen" | "relations";
 export type TimelineDay = "2026-08-03" | "2026-08-04";
-
-const moduleMeta: Array<{ id: ExhibitModule; label: string; en: string }> = [
-  { id: "tour", label: "五章导览", en: "GUIDED STORY" },
-  { id: "field", label: "实践轨迹", en: "FIELD PLAYER" },
-  { id: "water", label: "水脉时间机", en: "WATER TIME" },
-  { id: "resources", label: "药材标本柜", en: "SPECIMEN CABINET" },
-];
 
 const resourceSectionMeta: Array<{ id: ResourceSectionKey; label: string }> = [
   { id: "habitat", label: "生境" }, { id: "ecology", label: "生态关系" }, { id: "cultivation", label: "种植" },
@@ -61,6 +55,7 @@ type DigitalExhibitProps = {
 export function DigitalExhibit(props: DigitalExhibitProps) {
   const { panelRef, module, tourIndex, tourFrameIndex, playback, elapsedSeconds, totalSeconds, timelineDay, timelineCategory, timelineIndex, waterStageIndex, resourceIndex, resourceSection, resourceView, relationshipIndex } = props;
   const touchStartX = useRef<number | null>(null);
+  const [toolsOpen, setToolsOpen] = useState(module !== "tour");
   const filteredEvents = useMemo(() => timelineEvents.filter((event) => event.day === timelineDay && (timelineCategory === "全部" || event.category === timelineCategory)), [timelineCategory, timelineDay]);
   const chapter = tourChapters[tourIndex];
   const chapterFrames = chapterFramesById.get(chapter.id) ?? [];
@@ -75,6 +70,11 @@ export function DigitalExhibit(props: DigitalExhibitProps) {
   const resource = herbs[resourceIndex];
   const relationship = relationshipEdges[relationshipIndex];
   const tourProgress = Math.min(100, Math.round((elapsedSeconds / totalSeconds) * 100));
+  useEffect(() => {
+    if (module !== "tour") return;
+    const timer = window.setTimeout(() => setToolsOpen(playback === "paused"), 0);
+    return () => window.clearTimeout(timer);
+  }, [module, playback]);
 
   function handleTouchStart(event: React.TouchEvent) { touchStartX.current = event.changedTouches[0]?.clientX ?? null; }
   function handleTouchEnd(event: React.TouchEvent) {
@@ -84,12 +84,13 @@ export function DigitalExhibit(props: DigitalExhibitProps) {
     if (Math.abs(delta) > 56) props.onStep(delta < 0 ? 1 : -1);
   }
 
-  return <aside className="tour-panel exhibit-panel" ref={panelRef} tabIndex={-1} aria-label="数字展框" aria-live="polite" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
-    <div className="tour-top"><span>MINQIN DIGITAL EXHIBIT · 2026 PRACTICE ATLAS</span><button onClick={props.onEnd} aria-label="退出数字展框">退出 ×</button></div>
-    <div className="exhibit-modules" role="tablist" aria-label="展框模块">{moduleMeta.map((item) => <button key={item.id} role="tab" aria-selected={module === item.id} className={module === item.id ? "active" : ""} onClick={() => props.onSelectModule(item.id)}><strong>{item.label}</strong><small>{item.en}</small></button>)}</div>
+  return <aside className={`tour-panel exhibit-panel exhibit-module-${module}`} ref={panelRef} tabIndex={-1} aria-label="数字展框" aria-live="polite" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+    <ExhibitHeader module={module} tourIndex={tourIndex} onEnd={props.onEnd} />
+    <ExploreMenu open={toolsOpen} module={module} tourIndex={tourIndex} onOpenChange={setToolsOpen} onSelectModule={(nextModule) => { setToolsOpen(false); props.onSelectModule(nextModule); }} onGoChapter={props.onGoChapter} onRestart={props.onRestart} />
 
-    <div className={`exhibit-stage module-${module} ${module === "tour" && !tourFrameMedia ? "tour-text-frame" : ""}`}>
-      {module === "tour" && tourFrame && <>{tourFrameMedia && <figure className="tour-media">{tourFrameMedia.type === "image" ? <img key={tourFrame.id} src={tourFrameMedia.src} alt={tourFrameMedia.alt} /> : <video key={tourFrame.id} src={tourFrameMedia.src} autoPlay={playback === "playing"} muted playsInline preload="metadata" aria-label={tourFrameMedia.alt}><track kind="captions" src="/media/shared/ambient-zh.vtt" srcLang="zh" label="中文说明" default /></video>}<figcaption>{tourFrameMedia.caption}</figcaption></figure>}<div className="tour-copy"><p>{String(chapter.order).padStart(2, "0")} / {tourChapters.length} · 分镜 {tourFrameIndex + 1} / {chapterFrames.length}</p><span>{tourFrame.eyebrow}</span><h2>{tourFrame.title}</h2><p>{tourFrame.body}</p>{tourFramePoint && <small>定位：{tourFramePoint.title} · {tourFramePoint.accuracy}</small>}{tourFrameSource && <a className="active-source-link" href={tourFrameSource.url} target="_blank" rel="noreferrer">资料来源 · {tourFrameSource.publisher} ↗</a>}</div></>}
+    {module === "tour" && tourFrame && <TourStage chapter={chapter} chapterCount={tourChapters.length} frame={tourFrame} frameIndex={tourFrameIndex} frameCount={chapterFrames.length} media={tourFrameMedia} point={tourFramePoint} source={tourFrameSource} isPlaying={playback === "playing"} />}
+
+    {module !== "tour" && <div className={`exhibit-stage exhibit-knowledge-stage visual-${module === "resources" ? "specimen" : "data"}`} data-visual-type={module === "resources" ? "specimen" : "data"}>
 
       {module === "field" && <div className="field-player">
         <div className="exhibit-heading"><p>TWO-DAY FIELD PLAYER</p><h2>两日实践轨迹</h2><span>按原始素材时间与现场主题组织两日影像记录。</span></div>
@@ -101,11 +102,8 @@ export function DigitalExhibit(props: DigitalExhibitProps) {
       {module === "water" && <div className="water-machine"><div className="exhibit-heading"><p>WATER TIMELINE · HISTORICAL SLICES</p><h2>水脉时间机</h2><span>四个带年份与来源的历史切片，串联石羊河下游生态变化。</span></div><div className="water-years" role="tablist" aria-label="水脉年份">{waterStages.map((stage, index) => <button key={stage.id} role="tab" aria-selected={index === waterStageIndex} className={index === waterStageIndex ? "active" : ""} onClick={() => props.onSelectWaterStage(index)}>{stage.year}</button>)}</div><div className="water-visual" aria-label="水脉关系示意图"><i className={`water-pulse stage-${waterStageIndex + 1}`} /><div><span>红崖山水库</span><b>石羊河下游</b><span>青土湖</span></div><small>关系示意 · 非历史湖面范围</small></div><div className="water-readout"><time>{waterStage.year}</time><h3>{waterStage.title}</h3><div><strong>{waterStage.metric}</strong><span>{waterStage.unit}</span></div><p>{waterStage.interpretation}</p><small>资料口径：{waterStage.geometryMode === "symbolic" ? "文字资料与关系示意；未使用伪造空间边界" : "权威空间数据"}</small>{waterStage.sourceIds.map((id) => { const source = sourceById.get(id); return source ? <a key={id} href={source.url} target="_blank" rel="noreferrer">{source.publisher} · {source.publishedAt} ↗</a> : null; })}</div><label className="timeline-range"><span>{waterStage.year}</span><input aria-label="水脉年份进度" type="range" min="0" max={waterStages.length - 1} value={waterStageIndex} onChange={(event) => props.onSelectWaterStage(Number(event.target.value))} /></label></div>}
 
       {module === "resources" && <div className="resource-cabinet"><div className="exhibit-heading"><p>DESERT RESOURCE CABINET</p><h2>药材标本柜</h2><span>从沙生资源到生态产业，展开生境、种植与传播关系。</span></div><div className="resource-view-switch"><button className={resourceView === "specimen" ? "active" : ""} onClick={() => props.onSetResourceView("specimen")}>互动标本</button><button className={resourceView === "relations" ? "active" : ""} onClick={() => props.onSetResourceView("relations")}>关系演示</button></div>{resourceView === "specimen" ? <><div className="specimen-tabs" role="tablist" aria-label="药材资源">{herbs.map((herb, index) => <button key={herb.id} role="tab" aria-selected={index === resourceIndex} className={index === resourceIndex ? "active" : ""} onClick={() => props.onSelectResource(index)}><span>0{index + 1}</span>{herb.name}</button>)}</div><article className="specimen-sheet"><div className="specimen-stamp">{resource.evidenceLabel}</div><p>{resource.tag}</p><h3>{resource.name}</h3><em>{resource.latinLabel}</em><div className="resource-sections">{resourceSectionMeta.map((section) => <button key={section.id} className={resourceSection === section.id ? "active" : ""} onClick={() => props.onSetResourceSection(section.id)}>{section.label}</button>)}</div><div className="resource-section-copy"><strong>{resourceSectionMeta.find((item) => item.id === resourceSection)?.label}</strong><p>{resource.sections[resourceSection]}</p></div><button className="map-link" onClick={() => props.onActivateRelationshipPoint(resource.mapPointId)}>在地图中查看关联节点 →</button></article></> : <div className="relation-view"><div className="relation-network" aria-label="生态关系演示">{relationshipEdges.map((edge, index) => <button key={edge.id} className={index === relationshipIndex ? "active" : ""} onClick={() => props.onSetRelationshipIndex(index)}><span>{storyPointById.get(edge.fromPointId)?.title}</span><b>{edge.label}</b><span>{storyPointById.get(edge.toPointId)?.title}</span></button>)}</div><article className="relation-detail"><p>关系 {relationshipIndex + 1} / {relationshipEdges.length}</p><h3>{relationship.label}</h3><p>{relationship.explanation}</p><div><button onClick={() => props.onActivateRelationshipPoint(relationship.fromPointId)}>定位起点</button><button onClick={() => props.onActivateRelationshipPoint(relationship.toPointId)}>定位终点</button></div></article></div>}</div>}
-    </div>
+    </div>}
 
-    {module === "tour" && <div className={`tour-playback is-${playback}`} role="status"><button onClick={props.onTogglePlayback}>{playback === "playing" ? "暂停" : playback === "paused" ? "继续" : playback === "completed" ? "重新播放" : "自动播放"}</button><span>{playback === "playing" ? `正在播放第 ${tourIndex + 1} 章` : playback === "paused" ? `已暂停在第 ${tourIndex + 1} 章` : playback === "completed" ? "五章导览已完成" : "连续播放完整五章"}</span><div className="tour-total-progress" aria-label={`导览总进度 ${tourProgress}%`}><i><b style={{ width: `${tourProgress}%` }} /></i><small>{formatDuration(elapsedSeconds)} / {formatDuration(totalSeconds)}</small></div>{playback === "completed" && <div className="tour-complete-actions"><button onClick={props.onExploreMap}>自由探索地图</button><button onClick={props.onViewEvidence}>查看资料依据</button></div>}</div>}
-    <div className="tour-controls exhibit-controls"><button onClick={() => props.onStep(-1)} disabled={(module === "tour" && tourIndex === 0) || (module === "field" && timelineIndex === 0) || (module === "water" && waterStageIndex === 0) || (module === "resources" && resourceView === "specimen" && resourceIndex === 0) || (module === "resources" && resourceView === "relations" && relationshipIndex === 0)}>← 上一个</button><span>空格播放/暂停 · ← → 跳章 · Esc 退出</span><button onClick={() => props.onStep(1)} disabled={module === "tour" && tourIndex === tourChapters.length - 1}>下一个 →</button></div>
-    {module === "tour" && <div className="exhibit-rail" aria-label={`第${tourIndex + 1}章，共${tourChapters.length}章`}>{tourChapters.map((item, index) => <button key={item.id} className={index === tourIndex ? "active" : ""} onClick={() => props.onGoChapter(index)} aria-label={`跳至第${index + 1}章 ${item.title}`}><i>{String(index + 1).padStart(2, "0")}</i><span>{item.title}</span></button>)}</div>}
-    <button className="restart-exhibit" onClick={props.onRestart}>重新开始</button>
+    {module === "tour" ? <TourPlaybackBar playback={playback} elapsedSeconds={elapsedSeconds} totalSeconds={totalSeconds} progress={tourProgress} previousDisabled={tourIndex === 0} nextDisabled={tourIndex === tourChapters.length - 1} onToggle={() => { if (playback !== "playing") setToolsOpen(false); props.onTogglePlayback(); }} onPrevious={() => props.onStep(-1)} onNext={() => props.onStep(1)} onExploreMap={props.onExploreMap} onViewEvidence={props.onViewEvidence} /> : <ExhibitNavigationBar label={module === "field" ? "实践影像" : module === "water" ? "水脉切片" : "药材关系"} previousDisabled={(module === "field" && timelineIndex === 0) || (module === "water" && waterStageIndex === 0) || (module === "resources" && resourceView === "specimen" && resourceIndex === 0) || (module === "resources" && resourceView === "relations" && relationshipIndex === 0)} nextDisabled={(module === "field" && timelineIndex >= filteredEvents.length - 1) || (module === "water" && waterStageIndex >= waterStages.length - 1) || (module === "resources" && resourceView === "specimen" && resourceIndex >= herbs.length - 1) || (module === "resources" && resourceView === "relations" && relationshipIndex >= relationshipEdges.length - 1)} onPrevious={() => props.onStep(-1)} onNext={() => props.onStep(1)} />}
   </aside>;
 }

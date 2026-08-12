@@ -11,6 +11,18 @@
   --water: #228aa1;
   --flag: #c63e32;
   --line: rgba(23, 32, 24, 0.15);
+  --surface-documentary: #102219;
+  --surface-documentary-soft: #193429;
+  --surface-exhibit: #eee7d7;
+  --surface-exhibit-raised: #f8f3e8;
+  --text-on-dark: #f7f3e8;
+  --text-on-dark-muted: rgba(247, 243, 232, .7);
+  --text-muted: #5d675f;
+  --line-dark: rgba(247, 243, 232, .16);
+  --radius-control: 4px;
+  --space-section: clamp(80px, 8vw, 128px);
+  --motion-fade: 400ms;
+  --motion-map: 800ms;
   --serif: "Songti SC", "STSong", "Noto Serif CJK SC", "SimSun", serif;
   --sans: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif;
 }
@@ -20,8 +32,14 @@ html { scroll-behavior: smooth; background: var(--paper); }
 body { margin: 0; color: var(--ink); background: var(--paper); font-family: var(--sans); }
 button, a, video { -webkit-tap-highlight-color: transparent; }
 button { font: inherit; }
+button, a, summary { outline-offset: 4px; }
+button:focus-visible, a:focus-visible, summary:focus-visible, input:focus-visible { outline: 2px solid var(--sand); }
 a { color: inherit; }
 img, video { display: block; max-width: 100%; }
 
 ::selection { background: var(--flag); color: #fff; }
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --motion-fade: 1ms; --motion-map: 0ms; }
+}
 

@@ -226,3 +226,79 @@ footer { padding: 82px 7vw 38px; color: #d7e0da; background: #0f1913; }
   .story-map-mode .chapter-copy > p:not(.eyebrow) { margin: 22px 0 25px; font-size: 13px; line-height: 1.85; }
 }
 
+/* 2026 museum-documentary page system */
+.site-nav { height: 68px; padding-inline: max(28px, 4vw); background: rgba(10, 24, 16, .84); }
+.site-nav nav a { font-size: 13px; }
+.nav-date { font-size: 11px; }
+.hero-content { width: min(900px, 68vw); padding-top: 13vh; padding-bottom: 15vh; }
+.hero h1 { max-width: 10.5em; white-space: normal; font-size: clamp(58px, 6.7vw, 102px); line-height: 1.02; text-wrap: balance; }
+.hero-lead { max-width: 680px; font-size: clamp(15px, 1.2vw, 18px); }
+.hero-actions { gap: 24px; }
+.primary-action { min-height: 50px; padding: 13px 18px; border-radius: var(--radius-control); box-shadow: 0 12px 32px rgba(117,30,24,.24); }
+.secondary-action { min-height: 46px; display: inline-flex; align-items: center; }
+.team-label { padding-left: 22px; border-left: 1px solid rgba(255,255,255,.25); font-size: 12px; }
+.hero-readout { left: 4vw; right: 4vw; bottom: 0; justify-content: flex-end; border-top-color: rgba(255,255,255,.2); border-bottom: 0; background: linear-gradient(90deg, transparent, rgba(9,20,13,.38)); backdrop-filter: blur(6px); }
+.hero-readout div { min-width: 150px; padding: 13px 18px; }
+.hero-readout strong { font-size: 23px; }
+.hero-readout span { font-size: 9px; }
+
+.story-spine { padding: var(--space-section) 7vw calc(var(--space-section) + 24px); }
+.story-spine-heading, .explore-intro, .archive-intro { grid-template-columns: repeat(12, minmax(0, 1fr)); gap: clamp(16px, 2vw, 30px); }
+.story-spine-heading > .section-index, .explore-intro > .section-index, .archive-intro > .section-index { grid-column: span 2; }
+.story-spine-heading > div:nth-child(2), .explore-intro > div:nth-child(2), .archive-intro > div:nth-child(2) { grid-column: span 6; }
+.story-spine-heading > p, .archive-intro > p, .explore-copy { grid-column: span 4; }
+.story-spine-heading h2, .explore-intro h2, .archive-intro h2 { max-width: 9em; font-size: clamp(46px, 5vw, 72px); text-wrap: balance; }
+.story-spine-heading > p, .archive-intro > p, .explore-copy > p { font-size: 15px; line-height: 1.85; }
+.story-chapters { margin-top: 72px; }
+.story-chapters::before { left: 34px; }
+.story-chapter, .story-chapter:nth-child(even) { grid-template-columns: repeat(12, minmax(0, 1fr)); gap: clamp(18px, 2.2vw, 34px); min-height: min(760px, 82vh); padding: 64px 0; opacity: .78; }
+.story-chapter .chapter-number, .story-chapter:nth-child(even) .chapter-number { grid-column: 1; grid-row: 1; }
+.story-chapter .chapter-media, .story-chapter:nth-child(even) .chapter-media { grid-column: 2 / span 6; grid-row: 1; }
+.story-chapter .chapter-copy, .story-chapter:nth-child(even) .chapter-copy { grid-column: 8 / span 5; grid-row: 1; }
+.chapter-number span { width: 58px; height: 58px; border-radius: var(--radius-control); font-size: 22px; }
+.chapter-number i { border-radius: 0; }
+.chapter-media img, .chapter-media video, .story-chapter:nth-child(2) .chapter-media img, .story-chapter:nth-child(2) .chapter-media video, .story-chapter:nth-child(4) .chapter-media img, .story-chapter:nth-child(4) .chapter-media video { width: 100%; max-height: 590px; aspect-ratio: 16 / 11; }
+.chapter-media figcaption { font-size: 11px; }
+.chapter-copy h3 { max-width: 8em; font-size: clamp(42px, 4.4vw, 66px); text-wrap: balance; }
+.chapter-copy > p:not(.eyebrow) { font-size: 15px; line-height: 1.9; }
+.chapter-copy button { min-height: 50px; font-size: 12px; }
+
+.explore-intro { padding: var(--space-section) 7vw; }
+.explore-copy > div { flex-wrap: wrap; }
+.archive-zone { border-top-width: 8px; background: #ded6c6; }
+.archive-intro { padding: var(--space-section) 7vw 82px; }
+.dossier, .hexi-intro, .water-story, .field-media, .herb-story { padding-top: var(--space-section); padding-bottom: var(--space-section); }
+.dossier-card, .timeline article, .media-grid figure { border-radius: var(--radius-control); }
+.dossier-card { background: var(--surface-exhibit-raised); box-shadow: 0 18px 45px rgba(57,49,33,.06); }
+.dossier-card dd { font-size: 14px; }
+.dossier-card dt, .boundary-note { font-size: 11px; }
+.dossier-stats span { font-size: 10px; }
+.media-heading > p { font-size: 14px; }
+.media-grid figure { border: 1px solid rgba(23,32,24,.1); background: var(--surface-exhibit-raised); }
+.media-grid figcaption { min-height: 132px; }
+.media-grid p { font-size: 12px; line-height: 1.7; }
+.media-grid figcaption b { font-size: 9px; }
+.gallery-toggle { border-radius: var(--radius-control); font-size: 12px; }
+.timeline p { font-size: 13px; line-height: 1.75; }
+.timeline article a { font-size: 10px; }
+.herb-grid { gap: 12px; border: 0; }
+.herb-grid article { min-height: 470px; color: var(--ink); border: 1px solid rgba(229,197,126,.38); border-radius: var(--radius-control); background: var(--surface-exhibit-raised); }
+.herb-grid article:last-child { border-right: 1px solid rgba(229,197,126,.38); }
+.herb-grid h3 { color: var(--ink); font-size: clamp(44px, 4vw, 64px); }
+.herb-grid p { color: var(--text-muted); font-size: 14px; }
+.herb-grid small { color: rgba(23,32,24,.5); font-size: 11px; }
+.herb-grid article > a { font-size: 10px; }
+
+footer { color: var(--ink); background: #e5ddcd; }
+.footer-brand { border-bottom-color: var(--line); }
+.footer-brand small { color: var(--text-muted); }
+.footer-sources { grid-template-columns: repeat(12, minmax(0,1fr)); gap: 12px; }
+.footer-sources h2 { grid-column: 1 / -1; margin-bottom: 22px; color: var(--flag); font-size: 11px; }
+.footer-sources a { grid-column: span 6; grid-template-columns: 34px 1fr 24px; min-height: 132px; padding: 18px; border: 1px solid var(--line); border-radius: var(--radius-control); background: var(--surface-exhibit-raised); font-size: 13px; }
+.footer-sources a span { color: var(--flag); }
+.footer-sources a small { color: var(--text-muted); font-size: 10px; }
+.footer-sources a em { color: var(--oasis); font-size: 10px; }
+.method-note strong { color: var(--flag); }
+.method-note p, .footer-note p { color: var(--text-muted); font-size: 11px; }
+.footer-note { border-top-color: var(--line); }
+

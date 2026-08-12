@@ -131,3 +131,40 @@
   .story-map-mode .map-corner, .story-map-mode .map-data-badge, .story-map-mode .map-tools, .story-map-mode .map-legend, .story-map-mode .point-list { display: none; }
 }
 
+/* Stable atlas controls and projector legibility */
+.map-section { padding-top: var(--space-section); padding-bottom: var(--space-section); }
+.map-header { grid-template-columns: repeat(12, minmax(0, 1fr)); gap: clamp(18px, 2vw, 30px); }
+.map-header > div { grid-column: span 8; }
+.map-header > p { grid-column: span 4; font-size: 14px; line-height: 1.85; }
+.map-header h2 { max-width: 9em; font-size: clamp(44px, 4.8vw, 70px); text-wrap: balance; }
+.layer-tabs { position: relative; z-index: 15; min-height: 54px; border-bottom: 1px solid rgba(255,255,255,.17); }
+.layer-tabs button { min-height: 54px; padding: 9px 15px; }
+.layer-tabs button span { font-size: 14px; }
+.layer-tabs button small { margin-top: 3px; font-size: 7px; }
+.layer-tabs button b { font-size: 9px; }
+.map-frame { isolation: isolate; }
+.map-canvas { z-index: 1; }
+.map-corner, .map-data-badge { z-index: 3; font-size: 9px; }
+.point-list { z-index: 6; max-height: calc(100% - 124px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+.point-list button { min-height: 54px; border-radius: var(--radius-control); }
+.point-list strong { font-size: 13px; }
+.point-list small { font-size: 9px; }
+.map-legend { z-index: 5; width: 202px; gap: 8px; padding: 13px 14px; border-radius: var(--radius-control); font-size: 10px; }
+.map-legend small { font-size: 9px; }
+.map-tools { z-index: 7; }
+.map-tools button { min-height: 40px; border-radius: var(--radius-control); font-size: 11px; }
+.story-drawer { z-index: 12; }
+.drawer-close { border-radius: var(--radius-control); }
+.drawer-scroll h3 { max-width: 10em; font-size: clamp(34px, 3vw, 46px); text-wrap: balance; }
+.story-summary { font-size: 15px; }
+.drawer-sources a { font-size: 11px; }
+
+@media (min-width: 1600px) {
+  .map-story-marker { width: 44px; height: 44px; font-size: 10px; }
+  .point-list { width: 350px; }
+  .point-list button { min-height: 60px; }
+  .point-list strong { font-size: 15px; }
+  .map-legend { width: 224px; font-size: 12px; }
+  .map-tools button { min-height: 44px; font-size: 12px; }
+}
+

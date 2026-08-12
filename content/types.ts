@@ -2,6 +2,7 @@ export type StoryLayer = "practice" | "water" | "herbs" | "people";
 export type ContentOrigin = "团队实践" | "公开资料" | "项目计划";
 export type EvidenceStatus = "团队影像记录" | "公开资料可核" | "项目计划关注";
 export type LocationAccuracy = "县域叙事点" | "村级近似定位" | "公开知识点" | "GPS实拍点";
+export type ExhibitVisualType = "media" | "source" | "data" | "specimen";
 
 export type SourceRef = {
   id: string;
