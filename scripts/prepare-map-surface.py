@@ -3,13 +3,14 @@
 
 This offline-only preparation script reads the B04/B03/B02 Cloud-Optimized
 GeoTIFFs published by Element 84 on AWS Open Data, crops them to Minqin, and
-packs color-graded JPEG tiles into PMTiles. It adds no production dependency
+packs color-graded raster tiles into PMTiles. Full coverage uses JPEG; the GPS
+focus overlay uses feathered PNG alpha. It adds no production dependency
 and never creates a runtime network request.
 
 Preparation environment (kept outside the production bundle):
   uv venv --python 3.12 .surface-venv
   uv pip install --python .surface-venv/Scripts/python.exe \
-    rasterio==1.4.3 mercantile==1.2.1 pillow==11.3.0 numpy==2.2.6
+    rasterio==1.4.3 mercantile==1.2.1 pillow==11.3.0 numpy==2.2.6 pmtiles==3.4.1
 """
 
 from __future__ import annotations
@@ -17,6 +18,7 @@ from __future__ import annotations
 import argparse
 import concurrent.futures
 import hashlib
+import io
 import json
 import math
 import os
@@ -39,6 +41,7 @@ os.environ.setdefault("GDAL_HTTP_UNSAFESSL", "YES")
 
 import mercantile
 import numpy as np
+from pmtiles.reader import MemorySource, all_tiles
 import rasterio
 from PIL import Image, ImageEnhance
 from rasterio.transform import from_origin
@@ -55,6 +58,8 @@ MIN_ZOOM = 7
 MAX_ZOOM = 13
 WORKING_RESOLUTION_METRES = 30
 JPEG_QUALITY = 80
+TILE_FORMAT = "jpg"
+FOCUS_FEATHER_METRES = 320
 PMTILES_VERSION = "1.31.2"
 PMTILES_RELEASE_BASE = f"https://github.com/protomaps/go-pmtiles/releases/download/v{PMTILES_VERSION}"
 STAC_ROOT = "https://earth-search.aws.element84.com/v1"
@@ -262,6 +267,14 @@ def build_rgb(bounds: list[float]) -> tuple[Image.Image, tuple[float, float, flo
     image = Image.fromarray(rgb)
     image = ImageEnhance.Contrast(image).enhance(1.10)
     image = ImageEnhance.Color(image).enhance(0.82)
+    if TILE_FORMAT == "png":
+        edge_y = np.minimum(np.arange(height), np.arange(height)[::-1])[:, None]
+        edge_x = np.minimum(np.arange(width), np.arange(width)[::-1])[None, :]
+        edge_distance = np.minimum(edge_y, edge_x)
+        feather_pixels = max(1, round(FOCUS_FEATHER_METRES / WORKING_RESOLUTION_METRES))
+        alpha = np.clip(edge_distance / feather_pixels, 0, 1)
+        image = image.convert("RGBA")
+        image.putalpha(Image.fromarray((alpha * 255).astype(np.uint8)))
     print(f"Display percentiles: low={low.round(1).tolist()}, high={high.round(1).tolist()}")
     return image, (west, south, east, north), scene_records
 
@@ -270,7 +283,7 @@ def tile_bytes(image: Image.Image, image_bounds: tuple[float, float, float, floa
     west, south, east, north = image_bounds
     tile_bounds = mercantile.xy_bounds(tile)
     tile_west, tile_south, tile_east, tile_north = tile_bounds.left, tile_bounds.bottom, tile_bounds.right, tile_bounds.top
-    result = Image.new("RGB", (256, 256), (212, 197, 158))
+    result = Image.new("RGBA", (256, 256), (0, 0, 0, 0)) if TILE_FORMAT == "png" else Image.new("RGB", (256, 256), (212, 197, 158))
     overlap_west, overlap_south = max(west, tile_west), max(south, tile_south)
     overlap_east, overlap_north = min(east, tile_east), min(north, tile_north)
     if overlap_west < overlap_east and overlap_south < overlap_north:
@@ -292,7 +305,10 @@ def tile_bytes(image: Image.Image, image_bounds: tuple[float, float, float, floa
         )
         result.paste(resized, destination_box[:2])
     with tempfile.SpooledTemporaryFile(max_size=256 * 1024) as output:
-        result.save(output, format="JPEG", quality=JPEG_QUALITY, optimize=True, progressive=True, subsampling="4:2:0")
+        if TILE_FORMAT == "png":
+            result.save(output, format="PNG", optimize=True)
+        else:
+            result.save(output, format="JPEG", quality=JPEG_QUALITY, optimize=True, progressive=True, subsampling="4:2:0")
         output.seek(0)
         return output.read()
 
@@ -315,7 +331,7 @@ def write_mbtiles(path: Path, image: Image.Image, image_bounds: tuple[float, flo
             "type": "overlay",
             "version": "1",
             "description": "Documentary-toned real surface texture for local vector-map fusion",
-            "format": "jpg",
+            "format": TILE_FORMAT,
             "bounds": ",".join(map(str, bounds)),
             "center": "103.16,38.72,9",
             "minzoom": str(MIN_ZOOM),
@@ -364,6 +380,65 @@ def prepare_converter(workdir: Path) -> Path:
     return matches[0]
 
 
+def repack_existing_focus(archive: Path, provenance: Path, bounds: list[float]) -> None:
+    if not archive.exists() or not provenance.exists():
+        raise RuntimeError("Existing focus PMTiles and provenance are required for offline alpha repacking")
+    previous = json.loads(provenance.read_text(encoding="utf-8"))
+    west, south, east, north = transform_bounds("EPSG:4326", "EPSG:3857", *bounds, densify_pts=21)
+    with tempfile.TemporaryDirectory(prefix="minqin-focus-repack-") as temporary:
+        workdir = Path(temporary)
+        converter = prepare_converter(workdir)
+        mbtiles = workdir / "focus.mbtiles"
+        connection = sqlite3.connect(mbtiles)
+        tile_count = 0
+        try:
+            connection.executescript(
+                """
+                CREATE TABLE metadata (name TEXT, value TEXT);
+                CREATE TABLE tiles (zoom_level INTEGER, tile_column INTEGER, tile_row INTEGER, tile_data BLOB);
+                CREATE UNIQUE INDEX tile_index ON tiles (zoom_level, tile_column, tile_row);
+                """
+            )
+            metadata = {
+                "name": "Minqin Sentinel-2 10 m focus surface 2026",
+                "type": "overlay",
+                "version": "1",
+                "description": "Feathered transparent GPS focus texture over the 30 m base surface",
+                "format": "png",
+                "bounds": ",".join(map(str, bounds)),
+                "center": "103.496,38.736,13",
+                "minzoom": "12",
+                "maxzoom": "14",
+                "attribution": "Contains modified Copernicus Sentinel data 2026; COG distribution by Element 84",
+            }
+            connection.executemany("INSERT INTO metadata (name, value) VALUES (?, ?)", metadata.items())
+            source = MemorySource(archive.read_bytes())
+            for (zoom, column, row), data in all_tiles(source):
+                tile = mercantile.Tile(column, row, zoom)
+                tile_bounds = mercantile.xy_bounds(tile)
+                pixel_x = np.linspace(tile_bounds.left, tile_bounds.right, 256, endpoint=False) + (tile_bounds.right - tile_bounds.left) / 512
+                pixel_y = np.linspace(tile_bounds.top, tile_bounds.bottom, 256, endpoint=False) - (tile_bounds.top - tile_bounds.bottom) / 512
+                distance_x = np.minimum(pixel_x - west, east - pixel_x)[None, :]
+                distance_y = np.minimum(north - pixel_y, pixel_y - south)[:, None]
+                alpha = np.clip(np.minimum(distance_x, distance_y) / FOCUS_FEATHER_METRES, 0, 1)
+                image = Image.open(io.BytesIO(data)).convert("RGBA")
+                image.putalpha(Image.fromarray((alpha * 255).astype(np.uint8)))
+                with io.BytesIO() as output:
+                    image.save(output, format="PNG", optimize=True)
+                    connection.execute(
+                        "INSERT INTO tiles (zoom_level, tile_column, tile_row, tile_data) VALUES (?, ?, ?, ?)",
+                        (zoom, column, (1 << zoom) - 1 - row, output.getvalue()),
+                    )
+                tile_count += 1
+            connection.commit()
+        finally:
+            connection.close()
+        temporary_output = workdir / archive.name
+        subprocess.run([str(converter), "convert", str(mbtiles), str(temporary_output)], check=True)
+        shutil.copyfile(temporary_output, archive)
+    write_provenance(provenance, archive, bounds, "focus", tile_count, previous["scenes"])
+
+
 def write_provenance(path: Path, archive: Path, bounds: list[float], scope: str, tile_count: int, scenes: list[dict]) -> None:
     record = {
         "asset": archive.name,
@@ -390,8 +465,11 @@ def write_provenance(path: Path, archive: Path, bounds: list[float], scope: str,
         "maxZoom": MAX_ZOOM,
         "overzoomTo": 14,
         "tileCount": tile_count,
-        "archiveEncoding": "PMTiles v3 raster archive with documentary-toned JPEG tiles",
-        "processing": ["crop", "Web Mercator reprojection", f"{WORKING_RESOLUTION_METRES} m working grid", "complete real-imagery coverage check", "percentile contrast", "warm low-saturation color grade", "JPEG raster tiling", "PMTiles packing"],
+        "archiveEncoding": "PMTiles v3 raster archive with feathered PNG alpha tiles" if scope == "focus" else "PMTiles v3 raster archive with documentary-toned JPEG tiles",
+        "alphaTransparency": scope == "focus",
+        "edgeFeatherMetres": FOCUS_FEATHER_METRES if scope == "focus" else None,
+        "colorGradeBaseline": "Shared percentile contrast and warm low-saturation mapping used by the base surface pipeline",
+        "processing": ["crop", "Web Mercator reprojection", f"{WORKING_RESOLUTION_METRES} m working grid", "complete real-imagery coverage check", "percentile contrast", "warm low-saturation color grade", "PNG alpha raster tiling" if scope == "focus" else "JPEG raster tiling", "short edge feather over the 30 m base surface" if scope == "focus" else "opaque full-context coverage", "PMTiles packing"],
         "scenes": scenes,
         "references": {
             "registry": "https://registry.opendata.aws/sentinel-2-l2a-cogs/",
@@ -404,19 +482,20 @@ def write_provenance(path: Path, archive: Path, bounds: list[float], scope: str,
 
 
 def main() -> None:
-    global MIN_ZOOM, MAX_ZOOM, WORKING_RESOLUTION_METRES, JPEG_QUALITY
+    global MIN_ZOOM, MAX_ZOOM, WORKING_RESOLUTION_METRES, JPEG_QUALITY, TILE_FORMAT
     parser = argparse.ArgumentParser()
     parser.add_argument("--scope", choices=("prototype", "full", "focus"), default="prototype")
     parser.add_argument("--output", type=Path)
     parser.add_argument("--provenance", type=Path)
+    parser.add_argument("--reuse-existing-focus", action="store_true", help="Repack the verified local 10 m JPEG focus archive as feathered PNG alpha without another COG download")
     args = parser.parse_args()
     if args.scope == "focus":
-        MIN_ZOOM, MAX_ZOOM, WORKING_RESOLUTION_METRES, JPEG_QUALITY = 12, 14, 10, 88
+        MIN_ZOOM, MAX_ZOOM, WORKING_RESOLUTION_METRES, JPEG_QUALITY, TILE_FORMAT = 12, 14, 10, 88, "png"
         bounds = focus_bounds_from_story_points(Path("content/story-points.ts"))
         default_output = Path("public/maps/minqin-surface-focus-2026.pmtiles")
         default_provenance = Path("public/maps/minqin-surface-focus-2026.json")
     else:
-        MIN_ZOOM, MAX_ZOOM, WORKING_RESOLUTION_METRES, JPEG_QUALITY = 7, 13, 30, 80
+        MIN_ZOOM, MAX_ZOOM, WORKING_RESOLUTION_METRES, JPEG_QUALITY, TILE_FORMAT = 7, 13, 30, 80, "jpg"
         bounds = PROTOTYPE_BOUNDS if args.scope == "prototype" else FULL_BOUNDS
         default_output = Path("public/maps/minqin-surface-2026.pmtiles")
         default_provenance = Path("public/maps/minqin-surface-2026.json")
@@ -424,6 +503,14 @@ def main() -> None:
     provenance = (args.provenance or default_provenance).resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
     provenance.parent.mkdir(parents=True, exist_ok=True)
+
+    if args.reuse_existing_focus:
+        if args.scope != "focus":
+            raise RuntimeError("--reuse-existing-focus is only valid with --scope focus")
+        repack_existing_focus(output, provenance, bounds)
+        print(f"Wrote {output} ({output.stat().st_size:,} bytes, feathered PNG alpha repack)")
+        print(f"Wrote {provenance}")
+        return
 
     image, image_bounds, scenes = build_rgb(bounds)
     with tempfile.TemporaryDirectory(prefix="minqin-surface-") as temporary:

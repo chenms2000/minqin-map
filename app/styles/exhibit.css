@@ -97,7 +97,7 @@
 .restart-exhibit { justify-self: center; margin: 7px 0 9px; padding: 0; border: 0; color: rgba(255,255,255,.42); background: transparent; cursor: pointer; font-size: 7px; letter-spacing: .1em; }
 
 /* 2026 museum-documentary interface */
-.tour-mode { --exhibit-panel-width: clamp(460px, 40vw, 600px); }
+.tour-mode { --exhibit-panel-width: clamp(720px, 56vw, 1080px); }
 .tour-mode .map-section { right: var(--exhibit-panel-width); }
 .tour-panel {
   width: var(--exhibit-panel-width);

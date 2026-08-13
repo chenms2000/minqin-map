@@ -140,7 +140,7 @@ export function useMinqinMap({ activeLayer, activePoints, mapSelectedPointId, pr
         const focusUrl = new URL(focusPath, window.location.href).href;
         const focusArchive = new PMTiles(focusUrl);
         const header = await focusArchive.getHeader();
-        if (header.tileType !== TileType.Jpeg) throw new Error("Focus surface PMTiles archive must contain JPEG raster tiles");
+        if (header.tileType !== TileType.Png) throw new Error("Focus surface PMTiles archive must contain PNG raster tiles with alpha transparency");
         if (disposed) return;
         protocol.add(focusArchive);
         activeMap.addSource(surfaceFocusSourceId, {
@@ -308,7 +308,7 @@ export function useMinqinMap({ activeLayer, activePoints, mapSelectedPointId, pr
     pointMarkers.current.forEach(({ marker }) => marker.remove());
     const markersForLayer = new Map<string, PointMarkerEntry>();
     pointMarkers.current = markersForLayer;
-    activePoints.forEach((point, index) => {
+    activePoints.forEach((point) => {
       const button = document.createElement("button");
       button.type = "button";
       button.className = `map-story-marker ${activeLayer} ${accuracyClass(point.accuracy)} ${point.contentOrigin === "团队实践" ? "field" : "reference"}`;
@@ -316,7 +316,11 @@ export function useMinqinMap({ activeLayer, activePoints, mapSelectedPointId, pr
       button.setAttribute("aria-label", `打开故事：${point.title}`);
       button.setAttribute("aria-pressed", "false");
       button.title = `${point.title}｜${point.accuracy}`;
-      button.textContent = String(index + 1).padStart(2, "0");
+      const label = document.createElement("span");
+      label.className = "map-story-marker-label";
+      label.textContent = point.title;
+      label.setAttribute("aria-hidden", "true");
+      button.append(label);
       button.addEventListener("click", () => activationRef.current(point.id));
       const marker = new Marker({ element: button, anchor: "center" }).setLngLat(point.coordinates).addTo(map);
       markersForLayer.set(point.id, { marker, element: button });

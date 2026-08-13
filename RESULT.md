@@ -1,29 +1,33 @@
-# P8 任务结果（部分完成）
+# 导览与地图细节优化结果（部分完成）
 
 日期：2026-08-13
 
 ## 已完成
 
-- 建立唯一 `mapSelectedPointId`，覆盖 free、tour、field、water、resources 五种选中来源。
-- 新增 `seekTourToPoint()`：按章节 point frame 前置 `durationSeconds` 累计定位；用户点击时暂停，继续播放从当前 frame 开始。
-- Free drawer 支持 A → B → C 连续切换：内容立即同步、scrollTop 归零、只在首次打开时聚焦关闭按钮。
-- Marker registry 使用 `Map<string, { marker, element }>`；selected 变化只更新 class / ARIA，不再整批销毁。
-- Marker 可见符号收敛为小实心点、细环和虚线环；保留 44×44px hit area，selected 为单层外环。
-- 从 3 个既有 GPS 实拍点自动派生 2.5km 缓冲，生成 Sentinel-2 L2A 2026-08-06、B04/B03/B02、10m、z12–14 focus PMTiles（24 tiles，272,388 bytes）。
-- Focus 采用 Range progressive enhancement；`?focus=missing` 实测 focus unavailable、surface/terrain ready、fallback false。
-- Base PMTiles header 实测 bounds `[102.45,37.8,103.75,39.35]`、z0–13；因此 interaction bounds 未扩大。
-- Terrain render context 扩至 `[102.12890625,37.474858084971025,104.0625,39.67337039176559]`，生成 1059 tiles、36,191,746 bytes。
-- Browser 实测 free drawer 连续三点切换、Tour 同章 point-frame 直达、selected 同步、focus/terrain 独立失效；1920×1080、1366×768、980×768、390×844 均无横向溢出，控制台无 error。
-- `npm run content:validate` 与 `npm run lint` 通过。
+- 自动导览保持 44 个 frame 与唯一 `chapterFramesById → frame.durationSeconds` 时间轴；图片由 12 秒调为 9 秒、来源由 7 秒调为 5.5 秒、文字保持 4 秒，视频继续使用 `asset.durationSeconds`。
+- 导览总时长由 357.283 秒压缩为 300.283 秒：图片 81 秒、普通文字 28 秒、来源 110 秒、视频 81.283 秒。
+- Tour 镜头集中为 `cameraForTourFrame()`：intro 使用章节 overview，point 与带 pointId 的 media/source 使用 detail；`lastTourCameraKeyRef` 防止同点连续分镜重复 ease。
+- 第三章 intro 从 zoom 13.15 收敛为 11.45，1920×1080 与 1366×768 可同时读出三个实践点；GPS point 仍使用 zoom 13.85。
+- 原有 marker button 内加入直接派生自 `point.title` 的标签；四个图层均实测有名称，44×44 hit area 与 ARIA 保持。
+- Drawer 打开态与滚动区恢复 pointer events；A → B → C 连续切换时标题同步、scrollTop 归零、drawer 不关闭，滚轮实测可用。
+- Tour 桌面内容栏为约 56%，980px 为约 58%；390×844 保持地图约 38% / 内容约 62%，各尺寸无横向溢出。
+- A/B 确认高倍矩形 seam 来自 10m focus。Focus 改为 24 个 PNG-alpha 瓦片、1,883,514 bytes，裁切外透明并以 320m feather 混合 30m base；`?focus=missing` 继续独立降级。
+- `npm run content:validate`、`npm run lint`、`npm run build` 与 `npm test` 全部通过；结构测试 23/23。
 
-## 未完成 / 阻塞
+## 人工验收留项
 
-- 30m surface render context 未成功扩边。相邻真实 Sentinel COG 的远端 Range 读取多次中断；完整覆盖 Gate 分别得到 99.8623% 和 94.8935%，脚本按规则拒绝生成。
-- 因此旧 `minqin-surface-2026.pmtiles` 保持不变，正常高倾斜/旋转视角的 surface 直线裁切边界 Gate 尚未关闭。
-- 未将 P8 标记完成；`npm test` 会保留对扩边 provenance 的失败保护，等待真实 surface 资产补齐后关闭。
+- 浏览器已验证 Tour URL 可进入 playing（进度显示 0:01 / 5:00）、marker point seek、播放中点选后暂停并显示“继续”。按用户决定，未继续等待完整 5 分钟人工观看。
+- 自动化环境中 drawer wheel 可滚动，但原生 scrollbar thumb 的坐标拖拽未能被浏览器驱动命中；CSS pointer gate 与可见滚动条均已确认，直接拖拽留给人工。
+- 新开首页标签中“开始自动导览”按钮可见、可聚焦且无控制台错误，但自动化点击/Enter 未进入 Tour；正式 exhibit URL 与内部播放控制正常。该入口需人工复核，不能标记为浏览器 PASS。
+
+## 仍未解决
+
+- P8 主 30m surface render context 未扩边：当前 `minqin-surface-2026.pmtiles` 仍是旧 0.05° buffer。真实相邻 Sentinel COG coverage Gate 尚未关闭，因此整体 surface 边界问题仍是 blocker。
+- 本轮只修复 GPS 10m focus overlay 的矩形硬边，不宣称 P8 整体完成。
 
 ## 安全边界
 
-- 未修改 `content/*`、GPS 坐标、章节 mapView、播放时长或状态机。
-- 未使用纯色、CSS 渐变、AI 纹理或边缘拉伸遮缝。
-- 未修改 legacy 项目档案；未 commit、push 或 deploy。
+- 未修改 GPS 坐标、故事事实、视频真实时长、播放状态机或主 30m surface。
+- 未使用纯色、CSS 渐变、AI 纹理或拉伸数据遮缝。
+- 未修改受保护的 `docs/CONTEXT_POLICY.md`、`docs/HANDOFF.md`。
+- 未 commit、push 或 deploy。

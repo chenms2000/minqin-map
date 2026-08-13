@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { chapterFramesById, herbs, mediaById, relationshipEdges, sourceById, storyPointById, storyPoints, timelineEvents, tourChapters, waterStages, type ResourceSectionKey, type StoryLayer, type StoryPoint, type TimelineCategory } from "@/content";
+import { chapterFramesById, herbs, mediaById, relationshipEdges, sourceById, storyPointById, storyPoints, timelineEvents, tourChapters, waterStages, type ResourceSectionKey, type StoryLayer, type StoryPoint, type TimelineCategory, type TourChapter, type TourFrame } from "@/content";
 import { DigitalExhibit, type ExhibitModule, type ResourceView, type TimelineDay } from "@/app/components/exhibit/digital-exhibit";
 import { InteractiveMap } from "@/app/components/map/interactive-map";
 import { LongFormPage } from "@/app/components/sections/long-form-page";
@@ -16,6 +16,12 @@ const pointCameraTuning = { waterZoom: 9.2, contextZoom: 9.5, gpsZoom: 13.85, pi
 function cameraForPoint(point: Pick<StoryPoint, "coordinates" | "layer" | "accuracy">, duration: number, offset?: [number, number]) {
   const zoom = point.layer === "water" ? pointCameraTuning.waterZoom : point.accuracy === "GPS实拍点" ? pointCameraTuning.gpsZoom : pointCameraTuning.contextZoom;
   return { center: point.coordinates, zoom, pitch: pointCameraTuning.pitch, bearing: pointCameraTuning.bearing, duration, ...(offset ? { offset } : {}) };
+}
+
+function cameraForTourFrame(chapter: TourChapter, frame: TourFrame | undefined, point: StoryPoint | undefined, duration: number) {
+  if (frame?.kind === "intro") return { key: `chapter:${chapter.id}`, camera: { ...chapter.mapView, duration } };
+  if (frame?.pointId && point) return { key: `point:${point.id}`, camera: cameraForPoint(point, duration) };
+  return null;
 }
 
 function chapterIndexFromId(id: string | null) {
@@ -62,6 +68,7 @@ export function Experience() {
   const previousFocus = useRef<HTMLElement | null>(null);
   const chapterElapsedRef = useRef(0);
   const drawerWasOpen = useRef(false);
+  const lastTourCameraKeyRef = useRef<string | null>(null);
 
   const layerPoints = useMemo(() => storyPoints.filter((point) => point.layer === activeLayer), [activeLayer]);
   const selected = storyPointById.get(selectedId ?? "") ?? null;
@@ -203,12 +210,13 @@ export function Experience() {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const timer = window.setTimeout(() => {
       mapInstance.current?.resize();
-      if (exhibitModule === "tour" && activeTourPoint) {
-        setActiveLayer(activeTourPoint.layer);
-        mapInstance.current?.easeTo(cameraForPoint(activeTourPoint, reduced ? 0 : 850));
-      } else if (exhibitModule === "tour") {
-        setActiveLayer(chapter.layer);
-        mapInstance.current?.easeTo({ ...chapter.mapView, duration: reduced ? 0 : 850 });
+      if (exhibitModule === "tour") {
+        const target = cameraForTourFrame(chapter, activeTourFrame, activeTourPoint, reduced ? 0 : 850);
+        setActiveLayer(activeTourPoint?.layer ?? chapter.layer);
+        if (target && target.key !== lastTourCameraKeyRef.current) {
+          lastTourCameraKeyRef.current = target.key;
+          mapInstance.current?.easeTo(target.camera);
+        }
       }
       if (exhibitModule === "field" && timelinePoint) mapInstance.current?.easeTo(cameraForPoint(timelinePoint, reduced ? 0 : 700));
       if (exhibitModule === "water") mapInstance.current?.easeTo({ ...waterStage.mapView, duration: reduced ? 0 : 800 });
@@ -227,7 +235,7 @@ export function Experience() {
     return () => { window.clearTimeout(timer); window.removeEventListener("keydown", onKeyDown); };
     // Keyboard handlers intentionally use the current exhibit state.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTourFrame?.id, activeTourPoint, chapter, exhibitModule, selectedResourcePoint, timelinePoint, tourIndex, tourMode, tourPlayback, waterStage]);
+  }, [activeTourFrame, activeTourPoint, chapter, exhibitModule, selectedResourcePoint, timelinePoint, tourIndex, tourMode, waterStage]);
 
   function updateExhibitUrl(module: ExhibitModule | null, chapterIndex = tourIndex, replace = false) {
     const url = new URL(window.location.href);
@@ -261,10 +269,12 @@ export function Experience() {
   function startTour(initialIndex = 0, autoplay = false) {
     const safeIndex = Math.max(0, Math.min(tourChapters.length - 1, initialIndex));
     previousFocus.current = document.activeElement as HTMLElement;
+    lastTourCameraKeyRef.current = null;
     resetChapterProgress(); setTourIndex(safeIndex); setTourPlayback(autoplay ? "playing" : "idle"); setExhibitModule("tour"); setActiveLayer(tourChapters[safeIndex].layer); setSelectedId(null); setTourMode(true); updateExhibitUrl("tour", safeIndex);
   }
 
   function endTour() {
+    lastTourCameraKeyRef.current = null;
     setStoryIndex(tourIndex); resetChapterProgress(); setTourPlayback("idle"); setTourMode(false); updateExhibitUrl(null, tourIndex);
     window.setTimeout(() => { mapInstance.current?.resize(); previousFocus.current?.focus(); }, 90);
   }

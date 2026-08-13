@@ -1,7 +1,7 @@
 {
   "asset": "minqin-surface-focus-2026.pmtiles",
-  "assetBytes": 272388,
-  "assetSha256": "a3055347f40b040cf5a2752dad05a697e15ffa231f6ebc13574cb3536c235f8a",
+  "assetBytes": 2170363,
+  "assetSha256": "af12173c958d3a7821ca489d9c85a1c7bf10dfc164962296fa0677c2d852ec9c",
   "provider": "European Union Copernicus programme; distributed as COGs by Element 84 via AWS Open Data",
   "dataset": "Sentinel-2 Collection 1 Level-2A Cloud-Optimized GeoTIFFs",
   "license": "Copernicus Sentinel Data Licence: free, full and open access; reproduction, distribution, communication, adaptation, modification and combination are permitted with source notice.",
@@ -40,7 +40,10 @@
   "maxZoom": 14,
   "overzoomTo": 14,
   "tileCount": 24,
-  "archiveEncoding": "PMTiles v3 raster archive with documentary-toned JPEG tiles",
+  "archiveEncoding": "PMTiles v3 raster archive with feathered PNG alpha tiles",
+  "alphaTransparency": true,
+  "edgeFeatherMetres": 320,
+  "colorGradeBaseline": "Shared percentile contrast and warm low-saturation mapping used by the base surface pipeline",
   "processing": [
     "crop",
     "Web Mercator reprojection",
@@ -48,7 +51,8 @@
     "complete real-imagery coverage check",
     "percentile contrast",
     "warm low-saturation color grade",
-    "JPEG raster tiling",
+    "PNG alpha raster tiling",
+    "short edge feather over the 30 m base surface",
     "PMTiles packing"
   ],
   "scenes": [

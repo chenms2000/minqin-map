@@ -14,7 +14,7 @@
 
 - 项目：site
 - 最后更新：2026-08-13
-- 维护状态：P0–P7 改造完成，等待发布决策
+- 维护状态：P8 导览与局部地图细节优化已完成代码与自动验证；主 surface render-context 仍阻塞
 
 ## 当前目标
 
@@ -47,7 +47,7 @@
 - 首页“开始自动导览”可一次点击进入连续播放；展框提供秒级总进度、空格播放/暂停、方向键跳章及完成后的地图/资料双出口。
 - 连续导览已进一步派生自动分镜：地图位点镜头、精选图片、关联静音视频、点位摘要与来源文字会在章内自动切换。
 - 已完成“绿洲纪录片 × 数字博物馆”全站 UI：现场影像使用深绿界面，来源、数据和药材使用米白展签；首页、长页、地图和档案共享统一令牌与编辑式网格。
-- 自动导览桌面保持约 60% 地图与 40% 叙事栏，常驻控制收敛为暂停、上一页、进度/剩余时间和下一页；四模块与五章跳转进入可收起的探索菜单。
+- 自动导览桌面调整为约 44% 地图与 56% 内容栏，980px 为约 42% / 58%；常驻控制仍收敛为暂停、上一页、进度/剩余时间和下一页，手机保持地图约 38% / 内容约 62%。
 - 已在 1366×768、1920×1080、980px、390×844 与 200% 等效宽度检查界面；手机为地图 38% / 内容 62%，无横向溢出或控件遮挡。
 - 已完成数字地图第二轮制图质感精修：Protomaps 实际图层按道路等级与缩放渐进显现，建筑延后出现，自定义实践/GPS/水脉线均采用 zoom expression。
 - 地图故事点已改为 44px 可操作区内的测绘站式 ring + core 符号；selected 点位具备克制 halo、ARIA 状态与其余点位降权，手机抽屉打开后仍保留点位可见。
@@ -68,6 +68,10 @@
 - Marker 已从大靶心改为 44px hit area 内的 14–18px 点/细环/虚线环，selected 只增加单层外环。
 - GPS 三点已从既有坐标自动派生 2.5km buffer，生成 10m、z12–14 的本地 `minqin-surface-focus-2026.pmtiles`；`?focus=missing` 可独立退化，GPS 镜头为 13.85，非 GPS 镜头未提高。
 - Terrain render context 已扩至 z13 对齐的 `[102.12890625, 37.474858084971025, 104.0625, 39.67337039176559]`，1059 tiles / 36,191,746 bytes；interaction bounds 保持 base PMTiles 实际边界不变。
+- 本轮将 44 帧自动导览从 357.283 秒压缩为 300.283 秒：图片 81 秒、普通文字 28 秒、来源 110 秒、视频 81.283 秒；视频真实时长与单一 `frame.durationSeconds` 时间轴保持不变。
+- Tour 镜头已集中为 overview → detail：intro 使用章节 `mapView`，point 及带 pointId 的 media/source 使用点位镜头，同一 camera key 不重复 ease；第三章 intro 降至 zoom 11.45，先展示三个实践点关系。
+- Marker 名称直接派生自 `point.title` 并置于原有 44px button 内；drawer 打开态恢复完整 pointer events，A→B→C 连续换点与滚轮滚动实测通过。
+- 10m focus 已改为本地 PNG-alpha PMTiles（24 tiles / 1,883,514 bytes），裁切外透明并以 320m 短边 feather 混合 30m base；`?focus=missing` 仍独立降级。
 - P8 尚未完成：同日相邻 Sentinel COG 在扩大 surface context 的 Range 读取中持续失败，真实覆盖 Gate 分别只达到 99.8623% / 94.8935%；脚本拒绝纯色填边，现有 30m surface 资产未被覆盖，因此“所有正常视角无 surface 裁切线”尚未通过。
 
 ## 下一步
@@ -79,9 +83,9 @@
 
 ## 已知风险
 
-- P8 surface 外围扩展被真实数据读取阻塞；脚本保持 fail-closed，未用纯米色、拉伸或 AI 纹理填补缺口。当前 P7 surface 仍为旧的 0.05° buffer，边界 seam Gate 未关闭。
+- P8 主 surface 外围扩展仍被真实数据读取阻塞；脚本保持 fail-closed，未用纯米色、拉伸或 AI 纹理填补缺口。当前 P7 30m surface 仍为旧的 0.05° buffer，整体边界 seam Gate 未关闭；本轮只关闭了 10m focus overlay 的矩形硬边。
 - `public/` 中新增约 17.9 MiB terrain 与 20.4 MiB surface PMTiles；单文件仍低于常见 Git 托管限制。Surface 使用 Range 按需读取，terrain 仍沿用 P6 整包增强加载。
-- P6–P7 尚未提交、push 或部署；P0–P5 已有本地提交但尚未 push 或部署。
+- 本轮改动未 commit、push 或 deploy；受保护的 `docs/CONTEXT_POLICY.md` 与 `docs/HANDOFF.md` 保持未跟踪且未修改。
 - GPS 采样线来自影像元数据，只反映部分拍摄点；不得解释为完整路线、基地边界或导航坐标。
 - 白刺果名称已确认；直播展示农产品已确认为哈密瓜。
 
@@ -89,7 +93,7 @@
 
 - 构建命令：`npm run build`
 - 测试命令：`npm test`
-- 当前结构测试：20 项（包含有界 terrain / surface PMTiles 与 provenance、两类增强独立失败、Range surface、本地运行时、单 MapLibre、无 3D terrain 与路线/selected 语义保护）
+- 当前结构测试：23 项（包含导览时长、overview/detail 镜头、marker label、drawer pointer、focus PNG-alpha/provenance、增强独立失败、单 MapLibre、无在线运行时底图与无 3D terrain）
 - 部署方式：OpenAI Sites / Cloudflare（由 `.openai/hosting.json` 与 Vite 配置驱动）
 
 

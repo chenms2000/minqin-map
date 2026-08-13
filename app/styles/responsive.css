@@ -132,8 +132,8 @@
   .dossier { grid-template-columns: .35fr 1fr; }
   .dossier-card { grid-column: 2; }
   .media-grid { grid-template-columns: repeat(3,1fr); }
-  .tour-mode .map-section { right: 44vw; }
-  .tour-panel { width: 44vw; }
+  .tour-mode .map-section { right: var(--exhibit-panel-width); }
+  .tour-panel { width: var(--exhibit-panel-width); }
 }
 
 @media (max-width: 700px) {
@@ -201,11 +201,11 @@
 
 /* Museum-documentary responsive acceptance */
 @media (max-width: 1100px) {
-  .tour-mode { --exhibit-panel-width: clamp(460px, 40vw, 600px); }
+  .tour-mode { --exhibit-panel-width: 56vw; }
 }
 
 @media (max-width: 980px) {
-  .tour-mode { --exhibit-panel-width: 44vw; }
+  .tour-mode { --exhibit-panel-width: 58vw; }
   .story-spine-heading, .explore-intro, .archive-intro { grid-template-columns: repeat(8, minmax(0, 1fr)); }
   .story-spine-heading > .section-index, .explore-intro > .section-index, .archive-intro > .section-index { grid-column: span 2; }
   .story-spine-heading > div:nth-child(2), .explore-intro > div:nth-child(2), .archive-intro > div:nth-child(2) { grid-column: span 6; }

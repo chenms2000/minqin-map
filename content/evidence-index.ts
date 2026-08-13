@@ -11,8 +11,8 @@ const storyPointById = new Map(storyPoints.map((point) => [point.id, point]));
 const mediaById = new Map(media.map((asset) => [asset.id, asset]));
 const sourceById = new Map(sources.map((source) => [source.id, source]));
 const TEXT_FRAME_SECONDS = 4;
-const SOURCE_FRAME_SECONDS = 7;
-const IMAGE_FRAME_SECONDS = 12;
+const SOURCE_FRAME_SECONDS = 5.5;
+const IMAGE_FRAME_SECONDS = 9;
 const usedTourMediaIds = new Set<string>();
 
 function frameDurationSeconds(mediaId?: string) {

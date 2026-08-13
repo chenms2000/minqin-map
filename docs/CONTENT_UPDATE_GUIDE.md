@@ -49,7 +49,11 @@
 
 ## 调整五章导览
 
-在 `content/exhibit-scenes.ts` 修改章节顺序、镜头、图层、主媒体、讲解、点位和来源。`chapterFramesById` 会自动组织章节开场、点位摘要、精选图片、关联视频和来源摘要：普通纯文字 4 秒、来源说明 7 秒、图片 12 秒、视频读取 `durationSeconds` 并静音播放一次；五章内不重复媒体。章节切换由上层统一控制，不要在展框组件中复制计时数据或创建第二张地图。
+在 `content/exhibit-scenes.ts` 修改章节顺序、镜头、图层、主媒体、讲解、点位和来源。`chapterFramesById` 会自动组织章节开场、点位摘要、精选图片、关联视频和来源摘要：普通纯文字 4 秒、来源说明 5.5 秒、图片 9 秒、视频读取 `durationSeconds` 并静音播放一次；五章内不重复媒体。章节切换由上层统一控制，不要在展框组件中复制计时数据或创建第二张地图。章节 intro 应使用 `mapView` 展示整体关系；point 与带 pointId 的 media/source 使用局部镜头，连续同一点位不得反复 ease。调整非视频时间后必须重新计算实际总时长，并保持在 295–310 秒。
+
+## 更新 GPS focus 地表
+
+GPS 10m focus 由 `scripts/prepare-map-surface.py --scope focus` 从 `storyPoints` 中的 `GPS实拍点` 自动派生范围。Focus 使用 PNG alpha 与短边 feather 覆盖在 30m surface 上；裁切外必须透明，不得用纯色填边。已有经核验 focus 只需离线改编码时可使用 `--reuse-existing-focus`，仍须更新 provenance，并检查 `?focus=missing` 独立降级。
 
 ## 发布前检查
 

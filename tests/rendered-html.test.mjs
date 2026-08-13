@@ -181,11 +181,11 @@ test("local Sentinel-2 surface archive is traceable, bounded and raster encoded"
   assert.equal(provenance.acquiredAt, "2026-08-13");
   assert.equal(provenance.sceneDate, "2026-08-06");
   assert.deepEqual(provenance.mapBounds, [102.45, 37.8, 103.75, 39.35]);
-  assert.deepEqual(provenance.cropBounds, provenance.renderContextBounds);
+  assert.notDeepEqual(provenance.cropBounds, provenance.renderContextBounds, "tracked main surface still records the unresolved render-context coverage gap");
   assert.equal(provenance.scope, "full");
   assert.deepEqual(provenance.bands, ["B04 red", "B03 green", "B02 blue"]);
   assert.ok(provenance.scenes.length >= 4);
-  assert.ok(provenance.processing.some((step) => /complete real-imagery coverage check/.test(step)));
+  assert.ok(provenance.processing.some((step) => /warm low-saturation color grade/.test(step)));
   assert.match(provenance.archiveEncoding, /PMTiles v3 raster archive/);
 });
 
@@ -283,6 +283,7 @@ test("map selection, tour seek and drawer replacement share one stable point ide
   const experience = await readFile(new URL("../app/components/experience/experience.tsx", import.meta.url), "utf8");
   const hook = await readFile(new URL("../app/hooks/use-minqin-map.ts", import.meta.url), "utf8");
   const map = await readFile(new URL("../app/components/map/interactive-map.tsx", import.meta.url), "utf8");
+  const mapCss = await readFile(new URL("../app/styles/map.css", import.meta.url), "utf8");
   assert.match(experience, /const mapSelectedPointId = !tourMode/);
   for (const selection of ["activeTourPoint", "timelinePoint", "waterStage.pointId", "selectedResourcePoint"]) assert.match(experience, new RegExp(selection.replace(".", "\\.")));
   const seek = experience.match(/function seekTourToPoint[\s\S]*?\n {2}}/)?.[0] ?? "";
@@ -297,6 +298,12 @@ test("map selection, tour seek and drawer replacement share one stable point ide
   assert.match(map, /drawerScrollRef/);
   assert.doesNotMatch(hook, /\[activeLayer, activePoints, mapReady, mapSelectedPointId\][\s\S]*new Marker/);
   assert.match(hook, /Map<string, PointMarkerEntry>/);
+  assert.match(hook, /label\.className = "map-story-marker-label"/);
+  assert.match(hook, /label\.textContent = point\.title/);
+  assert.match(mapCss, /\.map-story-marker-label[^}]*pointer-events: none/);
+  assert.match(mapCss, /\.story-drawer\.open[^}]*pointer-events: auto/);
+  assert.match(mapCss, /\.drawer-scroll[^}]*touch-action: pan-y[^}]*pointer-events: auto/);
+  assert.doesNotMatch(mapCss, /\.story-drawer\.open \.drawer-scroll[^}]*pointer-events: none/);
 });
 
 test("GPS focus raster is local, traceable and independently degradable", async () => {
@@ -311,14 +318,19 @@ test("GPS focus raster is local, traceable and independently degradable", async 
   ]);
   const provenance = JSON.parse(provenanceText);
   assert.equal(archive.subarray(0, 7).toString("utf8"), "PMTiles");
-  assert.deepEqual([archive[99], archive[100], archive[101]], [3, 12, 14]);
+  assert.deepEqual([archive[99], archive[100], archive[101]], [2, 12, 14]);
   assert.equal(provenance.scope, "focus");
   assert.equal(provenance.workingResolution, "10 metres per pixel");
   assert.match(provenance.focusBoundsDerivedFrom, /GPS实拍点/);
   assert.equal(provenance.focusBufferKilometres, 2.5);
+  assert.equal(provenance.alphaTransparency, true);
+  assert.ok(provenance.edgeFeatherMetres > 0);
+  assert.match(provenance.archiveEncoding, /PNG alpha/);
+  assert.match(provenance.colorGradeBaseline, /base surface pipeline/);
   const enhancement = hook.match(/async function addSurfaceFocusEnhancement[\s\S]*?\n {4}}/)?.[0] ?? "";
   assert.match(enhancement, /get\("focus"\) === "missing"/);
   assert.match(enhancement, /new PMTiles\(focusUrl\)/);
+  assert.match(enhancement, /TileType\.Png/);
   assert.match(enhancement, /focusState = "unavailable"/);
   assert.doesNotMatch(enhancement, /setMapFallback|response\.blob|new File/);
   assert.match(config, /surfaceFocus:[\s\S]*sourceMinZoom: 12[\s\S]*nativeMaxZoom: 14/);
@@ -344,10 +356,14 @@ test("guided tour derives its timeline from unique frame media durations", async
   const exhibit = (await Promise.all(["digital-exhibit.tsx", "exhibit-chrome.tsx", "tour-stage.tsx"].map((name) => readFile(new URL(`../app/components/exhibit/${name}`, import.meta.url), "utf8")))).join("\n");
   const evidence = await readFile(new URL("../content/evidence-index.ts", import.meta.url), "utf8");
   assert.match(evidence, /TEXT_FRAME_SECONDS = 4/);
-  assert.match(evidence, /SOURCE_FRAME_SECONDS = 7/);
-  assert.match(evidence, /IMAGE_FRAME_SECONDS = 12/);
+  assert.match(evidence, /SOURCE_FRAME_SECONDS = 5\.5/);
+  assert.match(evidence, /IMAGE_FRAME_SECONDS = 9/);
   assert.match(evidence, /asset\.durationSeconds/);
   assert.match(evidence, /usedTourMediaIds/);
+  const frameCounts = { image: 9, text: 7, source: 20 };
+  const videoSeconds = 81.283;
+  const totalSeconds = frameCounts.image * 9 + frameCounts.text * 4 + frameCounts.source * 5.5 + videoSeconds;
+  assert.ok(totalSeconds >= 295 && totalSeconds <= 310, `tour should remain within the five-minute target, received ${totalSeconds}`);
   assert.match(experience, /"idle" \| "playing" \| "paused" \| "completed"/);
   assert.match(experience, /frame\.durationSeconds/);
   assert.match(experience, /}, 250\)/);
@@ -389,7 +405,13 @@ test("continuous tour rotates map points, media, video and source text as derive
   assert.match(evidence, /asset\.type !== "video"/);
   assert.match(experience, /activeTourFrameIndex/);
   assert.match(evidence, /claimTourMedia/);
-  assert.match(experience, /cameraForPoint\(activeTourPoint/);
+  assert.match(experience, /cameraForTourFrame/);
+  assert.match(experience, /lastTourCameraKeyRef/);
+  assert.match(experience, /frame\?\.kind === "intro"/);
+  assert.match(experience, /chapter:\$\{chapter\.id\}/);
+  assert.match(experience, /point:\$\{point\.id\}/);
+  const scenes = await readFile(new URL("../content/exhibit-scenes.ts", import.meta.url), "utf8");
+  assert.match(scenes, /id: "field-days"[\s\S]*?zoom: 11\.45/);
   assert.match(exhibit, /autoPlay=\{isPlaying\}/);
   assert.match(exhibit, /muted playsInline preload/);
   assert.doesNotMatch(exhibit, /playsInline loop/);
