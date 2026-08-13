@@ -418,6 +418,14 @@ test("continuous tour rotates map points, media, video and source text as derive
   assert.doesNotMatch(exhibit, /见视频下方文字|自动分镜 · AUTO STORYBOARD/);
 });
 
+test("the single map resizes with its container across story, free, and tour layouts", async () => {
+  const mapHook = await readFile(new URL("../app/hooks/use-minqin-map.ts", import.meta.url), "utf8");
+  assert.match(mapHook, /new ResizeObserver\(resizeMap\)/);
+  assert.match(mapHook, /resizeObserver\.observe\(container\)/);
+  assert.match(mapHook, /requestAnimationFrame\(\(\) => map\.resize\(\)\)/);
+  assert.match(mapHook, /resizeObserver\.disconnect\(\)/);
+});
+
 test("museum-documentary UI derives exhibit labels and keeps one persistent control layer", async () => {
   const types = await readFile(new URL("../content/types.ts", import.meta.url), "utf8");
   const stage = await readFile(new URL("../app/components/exhibit/tour-stage.tsx", import.meta.url), "utf8");

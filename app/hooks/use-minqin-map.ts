@@ -48,6 +48,28 @@ export function useMinqinMap({ activeLayer, activePoints, mapSelectedPointId, pr
 
   useEffect(() => {
     const container = mapContainer.current;
+    const map = mapInstance.current;
+    if (!container || !map || !mapReady) return;
+
+    let resizeFrame = 0;
+    const resizeMap = () => {
+      window.cancelAnimationFrame(resizeFrame);
+      resizeFrame = window.requestAnimationFrame(() => map.resize());
+    };
+    const resizeObserver = new ResizeObserver(resizeMap);
+    resizeObserver.observe(container);
+    window.addEventListener("resize", resizeMap);
+    resizeMap();
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", resizeMap);
+      window.cancelAnimationFrame(resizeFrame);
+    };
+  }, [mapReady]);
+
+  useEffect(() => {
+    const container = mapContainer.current;
     if (!container || mapInstance.current) return;
     const pointMarkerRegistry = pointMarkers.current;
     const protocol = new Protocol();
