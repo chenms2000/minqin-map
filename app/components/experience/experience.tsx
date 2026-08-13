@@ -11,7 +11,7 @@ import { defaultView } from "@/app/lib/map-config";
 const exhibitModules: ExhibitModule[] = ["tour", "field", "water", "resources"];
 export type TourPlaybackState = "idle" | "playing" | "paused" | "completed";
 
-const pointCameraTuning = { waterZoom: 9.2, contextZoom: 9.5, gpsZoom: 13.15, pitch: 45, bearing: -8 } as const;
+const pointCameraTuning = { waterZoom: 9.2, contextZoom: 9.5, gpsZoom: 13.85, pitch: 45, bearing: -8 } as const;
 
 function cameraForPoint(point: Pick<StoryPoint, "coordinates" | "layer" | "accuracy">, duration: number, offset?: [number, number]) {
   const zoom = point.layer === "water" ? pointCameraTuning.waterZoom : point.accuracy === "GPS实拍点" ? pointCameraTuning.gpsZoom : pointCameraTuning.contextZoom;
@@ -56,10 +56,12 @@ export function Experience() {
 
   const mapFrame = useRef<HTMLDivElement>(null);
   const closeButton = useRef<HTMLButtonElement>(null);
+  const drawerScroll = useRef<HTMLDivElement>(null);
   const mapSection = useRef<HTMLElement>(null);
   const tourPanel = useRef<HTMLElement>(null);
   const previousFocus = useRef<HTMLElement | null>(null);
   const chapterElapsedRef = useRef(0);
+  const drawerWasOpen = useRef(false);
 
   const layerPoints = useMemo(() => storyPoints.filter((point) => point.layer === activeLayer), [activeLayer]);
   const selected = storyPointById.get(selectedId ?? "") ?? null;
@@ -82,8 +84,18 @@ export function Experience() {
   const timelinePoint = timelineEvent ? storyPointById.get(timelineEvent.storyPointId) : undefined;
   const waterStage = waterStages[waterStageIndex];
   const selectedResourcePoint = storyPointById.get(herbs[resourceIndex].mapPointId);
+  const mapPresentationMode = tourMode ? "tour" : storyMapMode ? "story" : "free";
+  const mapSelectedPointId = !tourMode
+    ? selectedId
+    : exhibitModule === "tour"
+      ? activeTourPoint?.id ?? null
+      : exhibitModule === "field"
+        ? timelinePoint?.id ?? null
+        : exhibitModule === "water"
+          ? waterStage.pointId
+          : selectedResourcePoint?.id ?? null;
 
-  const { mapContainer, mapInstance, mapFallback, mapReady, mapProgress } = useMinqinMap({ activeLayer, activePoints, selectedId, onPointActivate: activateMapPoint });
+  const { mapContainer, mapInstance, mapFallback, mapReady, mapProgress } = useMinqinMap({ activeLayer, activePoints, mapSelectedPointId, presentationMode: mapPresentationMode, onPointActivate: activateMapPoint });
 
   useEffect(() => {
     if (!tourMode || exhibitModule !== "tour" || tourPlayback !== "playing") return;
@@ -166,11 +178,19 @@ export function Experience() {
   }, [mapInstance, storyChapter, storyIndex, storyMapMode, tourMode]);
 
   useEffect(() => {
-    if (!selected) return;
-    previousFocus.current = document.activeElement as HTMLElement;
-    closeButton.current?.focus();
+    if (!selected) {
+      drawerWasOpen.current = false;
+      return;
+    }
+    const isFirstOpen = !drawerWasOpen.current;
+    drawerWasOpen.current = true;
+    if (drawerScroll.current) drawerScroll.current.scrollTop = 0;
+    if (isFirstOpen) {
+      previousFocus.current = document.activeElement as HTMLElement;
+      closeButton.current?.focus();
+    }
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    mapInstance.current?.easeTo(cameraForPoint(selected, reduced ? 0 : 800, window.innerWidth < 700 ? [0, -210] : [-150, 0]));
+    mapInstance.current?.easeTo(cameraForPoint(selected, reduced ? 0 : 800, window.innerWidth < 700 ? [0, -210] : [-280, 0]));
     const onKeyDown = (event: KeyboardEvent) => { if (event.key === "Escape") closeStory(); };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
@@ -265,6 +285,24 @@ export function Experience() {
     updateExhibitUrl("tour", safeIndex, true);
   }
 
+  function seekTourToPoint(pointId: string) {
+    const chapterIndex = tourChapters.findIndex((item) => item.pointIds.includes(pointId));
+    if (chapterIndex < 0) return;
+    const targetChapter = tourChapters[chapterIndex];
+    const frames = chapterFramesById.get(targetChapter.id) ?? [];
+    const frameIndex = frames.findIndex((frame) => frame.kind === "point" && frame.pointId === pointId);
+    if (frameIndex < 0) return;
+    const elapsedSeconds = frames.slice(0, frameIndex).reduce((total, frame) => total + frame.durationSeconds, 0);
+    chapterElapsedRef.current = elapsedSeconds;
+    setChapterElapsedSeconds(elapsedSeconds);
+    setTourIndex(chapterIndex);
+    setExhibitModule("tour");
+    setActiveLayer(storyPointById.get(pointId)?.layer ?? targetChapter.layer);
+    setSelectedId(null);
+    if (tourPlayback === "playing") setTourPlayback("paused");
+    updateExhibitUrl("tour", chapterIndex, true);
+  }
+
   function toggleTourPlayback() {
     if (tourPlayback === "playing") { setTourPlayback("paused"); return; }
     if (tourPlayback === "completed") goToChapter(0);
@@ -293,8 +331,7 @@ export function Experience() {
     if (exhibitModule === "field") { const index = filteredTimelineEvents.findIndex((event) => event.storyPointId === pointId); if (index >= 0) selectTimelineEvent(index); return; }
     if (exhibitModule === "water") { const index = waterStages.findIndex((stage) => stage.pointId === pointId); if (index >= 0) selectWaterStage(index); return; }
     if (exhibitModule === "resources") { const index = herbs.findIndex((herb) => herb.mapPointId === pointId); if (index >= 0) selectResource(index); return; }
-    const index = tourChapters.findIndex((item) => item.pointIds.includes(pointId));
-    if (index >= 0) goToChapter(index);
+    seekTourToPoint(pointId);
   }
 
   function activateRelationshipPoint(pointId: string) {
@@ -306,9 +343,18 @@ export function Experience() {
 
   function closeStory() { setSelectedId(null); window.setTimeout(() => (previousFocus.current ?? mapSection.current)?.focus(), 0); }
   function resetMap() { mapInstance.current?.easeTo({ ...defaultView, duration: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 700 }); }
-  async function toggleFullscreen() { if (!mapFrame.current) return; if (document.fullscreenElement) await document.exitFullscreen(); else await mapFrame.current.requestFullscreen(); window.setTimeout(() => mapInstance.current?.resize(), 100); }
+  async function toggleFullscreen() {
+    if (!mapFrame.current) return;
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen();
+      else await mapFrame.current.requestFullscreen();
+      window.setTimeout(() => mapInstance.current?.resize(), 100);
+    } catch {
+      // Embedded and automated browsers may decline Fullscreen without making the map unusable.
+    }
+  }
 
-  const mapSlot = <InteractiveMap sectionRef={mapSection} frameRef={mapFrame} containerRef={mapContainer} closeButtonRef={closeButton} activeLayer={activeLayer} activePoints={activePoints} selected={selected} selectedMedia={selectedMedia} selectedSources={selectedSources} mapReady={mapReady} mapFallback={mapFallback} mapProgress={mapProgress} storyMode={storyMapMode && !tourMode} storyChapter={storyChapter} onLayerChange={(layer) => { setActiveLayer(layer); setSelectedId(null); }} onPointActivate={activateMapPoint} onCloseStory={closeStory} onResetMap={resetMap} onToggleFullscreen={toggleFullscreen} />;
+  const mapSlot = <InteractiveMap sectionRef={mapSection} frameRef={mapFrame} containerRef={mapContainer} closeButtonRef={closeButton} drawerScrollRef={drawerScroll} activeLayer={activeLayer} activePoints={activePoints} selected={selected} selectedMedia={selectedMedia} selectedSources={selectedSources} mapReady={mapReady} mapFallback={mapFallback} mapProgress={mapProgress} storyMode={storyMapMode && !tourMode} storyChapter={storyChapter} onLayerChange={(layer) => { setActiveLayer(layer); setSelectedId(null); }} onPointActivate={activateMapPoint} onCloseStory={closeStory} onResetMap={resetMap} onToggleFullscreen={toggleFullscreen} />;
 
   return <main className={[tourMode ? "tour-mode" : "", storyMapMode && !tourMode ? "story-map-mode" : ""].filter(Boolean).join(" ")}>
     <LongFormPage mapSlot={mapSlot} showAllMedia={showAllMedia} onToggleMedia={() => setShowAllMedia((value) => !value)} onStartExhibit={startTour} storyIndex={storyIndex} storyTargetId={storyTargetId} onStoryChapterChange={handleStoryChapterChange} onStoryMapModeChange={handleStoryMapModeChange} onStoryTargetHandled={handleStoryTargetHandled} />

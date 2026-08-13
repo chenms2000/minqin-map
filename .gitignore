@@ -27,9 +27,23 @@ Desktop.ini
 *.key
 *.p12
 *.pfx
+*.jks
+*.keystore
+*.token
+*.credentials
+credentials.json
+credentials.local.json
+service-account.json
+service-account-*.json
+.secrets/
+id_rsa
+id_dsa
+id_ecdsa
+id_ed25519
 
 # local editors and agent tooling
 /.ai-bridge/
+/.ai-project/
 /.idea/
 /.vscode/
 /.fleet/
@@ -45,6 +59,12 @@ Desktop.ini
 /temp/
 *.tmp
 *.temp
+
+# python helper caches and dependencies
+__pycache__/
+*.py[cod]
+/.venv/
+/venv/
 
 # debug
 npm-debug.log*

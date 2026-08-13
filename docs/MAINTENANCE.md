@@ -2,6 +2,31 @@
 
 每次完成实际维护后，由 Codex 在顶部追加一条简短记录。
 
+## 2026-08-13 - P7 Sentinel-2 真实地表与矢量融合
+
+- 数据 Gate：采用 Element 84 通过 AWS Open Data 分发的 Sentinel-2 Collection 1 L2A COG；Copernicus 许可允许复制、分发、公开传播、修改与组合，发布署名为“Contains modified Copernicus Sentinel data 2026”
+- 场景与范围：选择 2026-08-06 覆盖民勤的 48STH / 48SUH / 48STJ / 48SUJ 四景，场景云量 0–1.06%；使用官方 B04/B03/B02 TCI，自 10m 下采样至 30m，只裁切 `mapBounds` 外扩约 0.05° 的 `[102.40, 37.75, 103.80, 39.40]`
+- P7A Gate：先生成县城绿洲局部 prototype，固定默认视角 Before/After 一次通过；After 明显呈现农田格网、绿洲—裸地边缘和聚落周边结构，随后才扩展全范围
+- 离线资产：`minqin-surface-2026.pmtiles` 为 z7–13、2212 个 JPEG 瓦片、21,406,499 bytes；JSON provenance 记录 provider、dataset、许可、日期、云量、波段、分辨率、范围、场景 URL、处理链与 SHA-256
+- 可复现：新增 `scripts/prepare-map-surface.py`；离线环境使用固定 rasterio / mercantile / Pillow / NumPy，脚本并行裁切四个 COG、低饱和暖色分级、生成 MBTiles，并用校验后的 go-pmtiles v1.31.2 转换，不增加生产依赖
+- 加载与层序：基础 PMTiles 先就绪；surface 以已验证 206 的 HTTP Range 按需加入，随后 terrain 独立加入；层序为 earth → surface → hillshade → 半透明 landcover/landuse → water/roads/labels → 项目 routes/markers
+- 制图：landcover / landuse 大幅降低遮盖，surface 为主纹理、hillshade 为弱地貌；水脉关系示意线降低宽度/opacity；“民勤县”去除胶囊/边框/阴影并改为中英制图文字；自由 / Story / Tour 使用递减 surface 权重
+- 失效与架构：`?surface=missing` 与 `?terrain=missing` 均只降级对应增强，基础矢量、点位和抽屉保持；单 MapLibre、OSM / Sentinel / terrain attribution、GPS 采样线与 selected marker 语义不变，未启用 `setTerrain()` 或运行时在线瓦片
+- 浏览器：固定同视角 Before/After 明显通过；覆盖 1920×1080 Story、1366×768 free/water/GPS selected、980px Tour、390×844 移动抽屉，以及 surface missing、terrain missing 与既有 fallback；均无横向溢出或 console warn/error
+- 验证：`npm run content:validate`、`npm run lint`、`npm test` 全部通过，20/20 结构测试成功；开发静态服务 Range 请求返回 206 Partial Content
+- 发布：未提交、未 push、未部署；`docs/CONTEXT_POLICY.md` 与 `docs/HANDOFF.md` 原样保留且不加入范围
+
+## 2026-08-12 - P6 本地真实高程与轻量地形阴影
+
+- 数据 Gate：采用 AWS Open Data 上由 Mapzen（Linux Foundation）管理的 Terrain Tiles；民勤瓦片响应元数据确认高缩放来自 USGS SRTM 1 Arc-Second Global，低缩放合成含 GMTED2010；两者为公共领域数据并保留 Mapzen / USGS 署名
+- 离线资产：只裁切 `mapBounds` 外扩约 0.05° 的 `[102.40, 37.75, 103.80, 39.40]`，生成 z7–12、595 个 Terrarium PNG 瓦片的 PMTiles v3，最终 18,792,004 bytes；`minqin-terrain-2026.json` 记录来源、许可、范围、编码、实际 source file 与 SHA-256
+- 可复现：新增 `scripts/prepare-map-terrain.py`，仅用 Python 标准库下载瓦片、生成 MBTiles，并下载固定 go-pmtiles v1.31.2；官方 release SHA-256 校验通过后才转换，不增加生产依赖
+- 加载与制图：基础 `minqin-2026.pmtiles` 先加载并进入 `mapReady`，再异步接入 raster-dem / hillshade；层位按实际 `landcover` 后一层计算，自由/Story/Tour 复用同一层并逐级减弱，zoom 11.5 后强度回落，未启用 3D terrain
+- 失效与署名：`?terrain=missing` 实测基础矢量图、点位选择和抽屉继续可用，`mapFallback=false`、console 0 warn/error；`?map=fallback` 仍进入原本地沙盘；OSM、Mapzen、SRTM/GMTED2010 attribution 均可见
+- 浏览器：真实检查默认、zoom 8/10/13、GPS/近似/水脉 selected、Story、Tour、terrain 失效、fallback 与 390×844 移动抽屉；无横向溢出。自动化浏览器拒绝进入系统 fullscreen，现已捕获权限拒绝避免未处理异常；按钮与成功路径保留，视觉列为后续人工确认
+- 验证：`npm run content:validate`、`npm run lint`、build 与 18 项结构测试通过；最终 `npm test` 和 `git diff --check` 在收口后复跑
+- 发布：未提交、未 push、未部署；`docs/CONTEXT_POLICY.md` 与 `docs/HANDOFF.md` 原样保留且不加入范围
+
 ## 2026-08-12 - 数字地图第二轮制图质感精修
 
 - 制图：集中 cartographic palette / tuning，基于 Protomaps 实际图层为 highway、major、minor、service、边界、建筑和地貌设置渐进缩放层级，保留原有复杂颜色与宽度表达式

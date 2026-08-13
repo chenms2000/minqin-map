@@ -2,23 +2,28 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AttributionControl, Map as MapLibreMap, Marker, NavigationControl, Popup, ScaleControl, addProtocol, removeProtocol } from "maplibre-gl";
-import { FileSource, PMTiles, Protocol } from "pmtiles";
+import { FileSource, PMTiles, Protocol, TileType } from "pmtiles";
 import { fieldTracks, type StoryLayer, type StoryPoint } from "@/content";
 import { accuracyClass } from "@/app/lib/formatters";
-import { cartographicPalette, cartographicTuning, contextLabels, defaultView, localArchiveName, localArchivePath, localMapStyle, mapBounds, practiceRoute, waterRoute, zoomExpression } from "@/app/lib/map-config";
+import { cartographicPalette, cartographicTuning, contextLabels, defaultView, hillshadeInsertionBeforeId, localArchiveName, localArchivePath, localMapStyle, localSurfaceArchivePath, localSurfaceFocusArchivePath, localTerrainArchiveName, localTerrainArchivePath, mapBounds, practiceRoute, surfaceAttribution, surfaceFocusAttribution, surfaceFocusLayerId, surfaceFocusRasterPaint, surfaceFocusSourceId, surfaceInsertionBeforeId, surfaceLayerId, surfaceRasterPaint, surfaceSourceId, terrainAttribution, terrainHillshadeLayerId, terrainHillshadePaint, terrainSourceId, waterRoute, zoomExpression, type MapPresentationMode } from "@/app/lib/map-config";
 
 type UseMinqinMapOptions = {
   activeLayer: StoryLayer;
   activePoints: StoryPoint[];
-  selectedId: string | null;
+  mapSelectedPointId: string | null;
+  presentationMode: MapPresentationMode;
   onPointActivate: (pointId: string) => void;
 };
 
-export function useMinqinMap({ activeLayer, activePoints, selectedId, onPointActivate }: UseMinqinMapOptions) {
+type PointMarkerEntry = { marker: Marker; element: HTMLButtonElement };
+
+export function useMinqinMap({ activeLayer, activePoints, mapSelectedPointId, presentationMode, onPointActivate }: UseMinqinMapOptions) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<MapLibreMap | null>(null);
-  const markers = useRef<Marker[]>([]);
+  const contextMarkers = useRef<Marker[]>([]);
+  const pointMarkers = useRef<Map<string, PointMarkerEntry>>(new Map());
   const activationRef = useRef(onPointActivate);
+  const presentationModeRef = useRef(presentationMode);
   const [mapFallback, setMapFallback] = useState(false);
   const [mapReady, setMapReady] = useState(false);
   const [mapProgress, setMapProgress] = useState(4);
@@ -28,7 +33,23 @@ export function useMinqinMap({ activeLayer, activePoints, selectedId, onPointAct
   }, [onPointActivate]);
 
   useEffect(() => {
-    if (!mapContainer.current || mapInstance.current) return;
+    presentationModeRef.current = presentationMode;
+    const map = mapInstance.current;
+    if (map?.getLayer(terrainHillshadeLayerId)) {
+      map.setPaintProperty(terrainHillshadeLayerId, "hillshade-exaggeration", terrainHillshadePaint(presentationMode)["hillshade-exaggeration"]);
+    }
+    if (map?.getLayer(surfaceLayerId)) {
+      map.setPaintProperty(surfaceLayerId, "raster-opacity", surfaceRasterPaint(presentationMode)["raster-opacity"]);
+    }
+    if (map?.getLayer(surfaceFocusLayerId)) {
+      map.setPaintProperty(surfaceFocusLayerId, "raster-opacity", surfaceFocusRasterPaint(presentationMode)["raster-opacity"]);
+    }
+  }, [mapReady, presentationMode]);
+
+  useEffect(() => {
+    const container = mapContainer.current;
+    if (!container || mapInstance.current) return;
+    const pointMarkerRegistry = pointMarkers.current;
     const protocol = new Protocol();
     const abortController = new AbortController();
     let map: MapLibreMap | null = null;
@@ -36,6 +57,113 @@ export function useMinqinMap({ activeLayer, activePoints, selectedId, onPointAct
     let disposed = false;
     let loaded = false;
     const fallbackTimer = window.setTimeout(() => { if (!loaded) setMapFallback(true); }, 12000);
+
+    async function addSurfaceEnhancement(activeMap: MapLibreMap) {
+      container.dataset.surfaceState = "loading";
+      try {
+        const surfacePath = new URLSearchParams(window.location.search).get("surface") === "missing"
+          ? "/maps/__missing-minqin-surface.pmtiles"
+          : localSurfaceArchivePath;
+        const surfaceUrl = new URL(surfacePath, window.location.href).href;
+        const surfaceArchive = new PMTiles(surfaceUrl);
+        const header = await surfaceArchive.getHeader();
+        if (header.tileType !== TileType.Jpeg) throw new Error("Surface PMTiles archive must contain JPEG raster tiles");
+        if (disposed) return;
+        protocol.add(surfaceArchive);
+        activeMap.addSource(surfaceSourceId, {
+          type: "raster",
+          url: `pmtiles://${surfaceUrl}`,
+          attribution: surfaceAttribution,
+          tileSize: cartographicTuning.surface.tileSize,
+          minzoom: cartographicTuning.surface.sourceMinZoom,
+          maxzoom: cartographicTuning.surface.nativeMaxZoom,
+        });
+        activeMap.addLayer({
+          id: surfaceLayerId,
+          type: "raster",
+          source: surfaceSourceId,
+          minzoom: cartographicTuning.surface.sourceMinZoom,
+          paint: surfaceRasterPaint(presentationModeRef.current),
+        }, surfaceInsertionBeforeId(activeMap.getStyle().layers));
+        container.dataset.surfaceState = "ready";
+      } catch {
+        if (abortController.signal.aborted || disposed) return;
+        container.dataset.surfaceState = "unavailable";
+      }
+    }
+
+    async function addTerrainEnhancement(activeMap: MapLibreMap) {
+      container.dataset.terrainState = "loading";
+      try {
+        const terrainPath = new URLSearchParams(window.location.search).get("terrain") === "missing"
+          ? "/maps/__missing-minqin-terrain.pmtiles"
+          : localTerrainArchivePath;
+        const response = await fetch(terrainPath, { cache: "force-cache", signal: abortController.signal });
+        if (!response.ok) throw new Error(`Terrain PMTiles request failed: ${response.status}`);
+        const archiveBlob = await response.blob();
+        if (archiveBlob.size < 1024) throw new Error("Terrain PMTiles archive is incomplete");
+        const terrainArchive = new PMTiles(new FileSource(new File([archiveBlob], localTerrainArchiveName, { type: "application/octet-stream" })));
+        const header = await terrainArchive.getHeader();
+        if (header.tileType !== TileType.Png) throw new Error("Terrain PMTiles archive must contain PNG DEM tiles");
+        if (disposed) return;
+        protocol.add(terrainArchive);
+        activeMap.addSource(terrainSourceId, {
+          type: "raster-dem",
+          url: `pmtiles://${localTerrainArchiveName}`,
+          attribution: terrainAttribution,
+          encoding: "terrarium",
+          tileSize: cartographicTuning.terrain.tileSize,
+          minzoom: cartographicTuning.terrain.sourceMinZoom,
+          maxzoom: cartographicTuning.terrain.nativeMaxZoom,
+        });
+        const beforeId = hillshadeInsertionBeforeId(activeMap.getStyle().layers);
+        activeMap.addLayer({
+          id: terrainHillshadeLayerId,
+          type: "hillshade",
+          source: terrainSourceId,
+          minzoom: cartographicTuning.terrain.sourceMinZoom,
+          paint: terrainHillshadePaint(presentationModeRef.current),
+        }, beforeId);
+        container.dataset.terrainState = "ready";
+      } catch {
+        if (abortController.signal.aborted || disposed) return;
+        container.dataset.terrainState = "unavailable";
+      }
+    }
+
+    async function addSurfaceFocusEnhancement(activeMap: MapLibreMap) {
+      container.dataset.focusState = "loading";
+      try {
+        const focusPath = new URLSearchParams(window.location.search).get("focus") === "missing"
+          ? "/maps/__missing-minqin-surface-focus.pmtiles"
+          : localSurfaceFocusArchivePath;
+        const focusUrl = new URL(focusPath, window.location.href).href;
+        const focusArchive = new PMTiles(focusUrl);
+        const header = await focusArchive.getHeader();
+        if (header.tileType !== TileType.Jpeg) throw new Error("Focus surface PMTiles archive must contain JPEG raster tiles");
+        if (disposed) return;
+        protocol.add(focusArchive);
+        activeMap.addSource(surfaceFocusSourceId, {
+          type: "raster",
+          url: `pmtiles://${focusUrl}`,
+          attribution: surfaceFocusAttribution,
+          tileSize: cartographicTuning.surfaceFocus.tileSize,
+          minzoom: cartographicTuning.surfaceFocus.sourceMinZoom,
+          maxzoom: cartographicTuning.surfaceFocus.nativeMaxZoom,
+        });
+        activeMap.addLayer({
+          id: surfaceFocusLayerId,
+          type: "raster",
+          source: surfaceFocusSourceId,
+          minzoom: cartographicTuning.surfaceFocus.sourceMinZoom,
+          paint: surfaceFocusRasterPaint(presentationModeRef.current),
+        }, surfaceInsertionBeforeId(activeMap.getStyle().layers));
+        container.dataset.focusState = "ready";
+      } catch {
+        if (abortController.signal.aborted || disposed) return;
+        container.dataset.focusState = "unavailable";
+      }
+    }
 
     async function initializeMap() {
       try {
@@ -64,11 +192,11 @@ export function useMinqinMap({ activeLayer, activePoints, selectedId, onPointAct
         if (archiveBlob.size < 1024) throw new Error("PMTiles archive is incomplete");
         const archive = new PMTiles(new FileSource(new File([archiveBlob], localArchiveName, { type: "application/octet-stream" })));
         await archive.getHeader();
-        if (disposed || !mapContainer.current) return;
+        if (disposed) return;
         protocol.add(archive);
         addProtocol("pmtiles", protocol.tile);
         protocolRegistered = true;
-        map = new MapLibreMap({ container: mapContainer.current, style: localMapStyle(localArchiveName), ...defaultView, attributionControl: false, minZoom: 7.2, maxZoom: 14, maxPitch: 68, maxBounds: mapBounds });
+        map = new MapLibreMap({ container, style: localMapStyle(localArchiveName), ...defaultView, attributionControl: false, minZoom: 7.2, maxZoom: 14, maxPitch: 68, maxBounds: mapBounds });
         mapInstance.current = map;
         map.addControl(new NavigationControl({ visualizePitch: true }), "bottom-right");
         map.addControl(new ScaleControl({ maxWidth: 110, unit: "metric" }), "bottom-left");
@@ -104,6 +232,12 @@ export function useMinqinMap({ activeLayer, activePoints, selectedId, onPointAct
           map.addSource("water-route", { type: "geojson", data: waterRoute });
           map.addLayer({ id: "water-route-line", type: "line", source: "water-route", layout: { visibility: "none", "line-cap": "round", "line-join": "round" }, paint: { "line-color": cartographicPalette.routes.water, "line-width": zoomExpression(cartographicTuning.routes.water.width), "line-opacity": zoomExpression(cartographicTuning.routes.water.opacity) } });
           setMapReady(true);
+          window.setTimeout(() => {
+            if (!map || disposed) return;
+            void addSurfaceEnhancement(map)
+              .then(() => map && !disposed ? addSurfaceFocusEnhancement(map) : undefined)
+              .then(() => map && !disposed ? addTerrainEnhancement(map) : undefined);
+          }, 0);
         });
         map.on("error", () => { if (!loaded) setMapFallback(true); });
       } catch {
@@ -118,10 +252,15 @@ export function useMinqinMap({ activeLayer, activePoints, selectedId, onPointAct
       disposed = true;
       abortController.abort();
       window.clearTimeout(fallbackTimer);
-      markers.current.forEach((marker) => marker.remove());
-      markers.current = [];
+      contextMarkers.current.forEach((marker) => marker.remove());
+      contextMarkers.current = [];
+      pointMarkerRegistry.forEach(({ marker }) => marker.remove());
+      pointMarkerRegistry.clear();
       map?.remove();
       if (protocolRegistered) removeProtocol("pmtiles");
+      delete container.dataset.terrainState;
+      delete container.dataset.surfaceState;
+      delete container.dataset.focusState;
       mapInstance.current = null;
     };
   }, []);
@@ -129,16 +268,22 @@ export function useMinqinMap({ activeLayer, activePoints, selectedId, onPointAct
   useEffect(() => {
     const map = mapInstance.current;
     if (!map) return;
-    markers.current.forEach((marker) => marker.remove());
-    markers.current = [];
     const contextElements: Array<{ element: HTMLDivElement; minZoom: number; fullZoom: number }> = [];
     contextLabels.forEach((label) => {
       const element = document.createElement("div");
       element.className = `map-context-label ${label.kind}`;
-      element.textContent = label.name;
+      if (label.name === "民勤县") {
+        const chinese = document.createElement("strong");
+        const latin = document.createElement("small");
+        chinese.textContent = "民 勤 县";
+        latin.textContent = "MINQIN COUNTY";
+        element.append(chinese, latin);
+      } else {
+        element.textContent = label.name;
+      }
       element.setAttribute("aria-hidden", "true");
       contextElements.push({ element, minZoom: label.minZoom, fullZoom: label.fullZoom });
-      markers.current.push(new Marker({ element, anchor: "center" }).setLngLat(label.coordinates).addTo(map));
+      contextMarkers.current.push(new Marker({ element, anchor: "center" }).setLngLat(label.coordinates).addTo(map));
     });
     const updateContextLabelDensity = () => {
       const zoom = map.getZoom();
@@ -150,19 +295,31 @@ export function useMinqinMap({ activeLayer, activePoints, selectedId, onPointAct
     };
     updateContextLabelDensity();
     map.on("zoom", updateContextLabelDensity);
+    return () => {
+      map.off("zoom", updateContextLabelDensity);
+      contextMarkers.current.forEach((marker) => marker.remove());
+      contextMarkers.current = [];
+    };
+  }, [mapReady]);
+
+  useEffect(() => {
+    const map = mapInstance.current;
+    if (!map) return;
+    pointMarkers.current.forEach(({ marker }) => marker.remove());
+    const markersForLayer = new Map<string, PointMarkerEntry>();
+    pointMarkers.current = markersForLayer;
     activePoints.forEach((point, index) => {
       const button = document.createElement("button");
       button.type = "button";
-      const isSelected = selectedId === point.id;
-      button.className = `map-story-marker ${activeLayer} ${accuracyClass(point.accuracy)} ${point.contentOrigin === "团队实践" ? "field" : "reference"}${isSelected ? " is-selected" : selectedId ? " is-dimmed" : ""}`;
+      button.className = `map-story-marker ${activeLayer} ${accuracyClass(point.accuracy)} ${point.contentOrigin === "团队实践" ? "field" : "reference"}`;
       button.style.setProperty("--marker-color", point.color);
       button.setAttribute("aria-label", `打开故事：${point.title}`);
-      button.setAttribute("aria-pressed", String(isSelected));
-      if (isSelected) button.setAttribute("aria-current", "location");
+      button.setAttribute("aria-pressed", "false");
       button.title = `${point.title}｜${point.accuracy}`;
       button.textContent = String(index + 1).padStart(2, "0");
       button.addEventListener("click", () => activationRef.current(point.id));
-      markers.current.push(new Marker({ element: button, anchor: "center" }).setLngLat(point.coordinates).addTo(map));
+      const marker = new Marker({ element: button, anchor: "center" }).setLngLat(point.coordinates).addTo(map);
+      markersForLayer.set(point.id, { marker, element: button });
     });
     if (map.loaded()) {
       map.setLayoutProperty("practice-route-halo", "visibility", activeLayer === "practice" ? "visible" : "none");
@@ -173,8 +330,22 @@ export function useMinqinMap({ activeLayer, activePoints, selectedId, onPointAct
       });
       map.setLayoutProperty("water-route-line", "visibility", activeLayer === "water" ? "visible" : "none");
     }
-    return () => map.off("zoom", updateContextLabelDensity);
-  }, [activeLayer, activePoints, mapReady, selectedId]);
+    return () => {
+      markersForLayer.forEach(({ marker }) => marker.remove());
+      if (pointMarkers.current === markersForLayer) pointMarkers.current.clear();
+    };
+  }, [activeLayer, activePoints, mapReady]);
+
+  useEffect(() => {
+    pointMarkers.current.forEach(({ element }, pointId) => {
+      const isSelected = mapSelectedPointId === pointId;
+      element.classList.toggle("is-selected", isSelected);
+      element.classList.toggle("is-dimmed", Boolean(mapSelectedPointId) && !isSelected);
+      element.setAttribute("aria-pressed", String(isSelected));
+      if (isSelected) element.setAttribute("aria-current", "location");
+      else element.removeAttribute("aria-current");
+    });
+  }, [activeLayer, activePoints, mapReady, mapSelectedPointId]);
 
   return { mapContainer, mapInstance, mapFallback, mapReady, mapProgress };
 }

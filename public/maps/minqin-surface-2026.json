@@ -1,0 +1,112 @@
+{
+  "asset": "minqin-surface-2026.pmtiles",
+  "assetBytes": 21406499,
+  "assetSha256": "145a70f2c71fcd80f595812849cf989d77c74eb8d1c1dd975cbd6aae4f3dcbf5",
+  "provider": "European Union Copernicus programme; distributed as COGs by Element 84 via AWS Open Data",
+  "dataset": "Sentinel-2 Collection 1 Level-2A Cloud-Optimized GeoTIFFs",
+  "license": "Copernicus Sentinel Data Licence: free, full and open access; reproduction, distribution, communication, adaptation, modification and combination are permitted with source notice.",
+  "redistributionNotice": "Contains modified Copernicus Sentinel data 2026",
+  "acquiredAt": "2026-08-13",
+  "sceneDate": "2026-08-06",
+  "cloudCoveragePercent": [
+    1.06,
+    0.13,
+    0.42,
+    0.0
+  ],
+  "bands": [
+    "B04 red",
+    "B03 green",
+    "B02 blue"
+  ],
+  "sourceEncoding": "Official Sentinel-2 TCI GeoTIFF composed from B04/B03/B02",
+  "originalResolution": "10 metres per pixel",
+  "workingResolution": "30 metres per pixel",
+  "mapBounds": [
+    102.45,
+    37.8,
+    103.75,
+    39.35
+  ],
+  "cropBounds": [
+    102.4,
+    37.75,
+    103.8,
+    39.4
+  ],
+  "scope": "full",
+  "minZoom": 7,
+  "maxZoom": 13,
+  "overzoomTo": 14,
+  "tileCount": 2212,
+  "archiveEncoding": "PMTiles v3 raster archive with documentary-toned JPEG tiles",
+  "processing": [
+    "crop",
+    "Web Mercator reprojection",
+    "30 m downsample",
+    "percentile contrast",
+    "warm low-saturation color grade",
+    "JPEG raster tiling",
+    "PMTiles packing"
+  ],
+  "scenes": [
+    {
+      "id": "S2A_T48STH_20260806T040209_L2A",
+      "mgrsTile": "48STH",
+      "cloudCover": 1.06,
+      "datetime": "2026-08-06T04:07:57.582000Z",
+      "platform": "sentinel-2a",
+      "visualAsset": "https://e84-earth-search-sentinel-data.s3.us-west-2.amazonaws.com/sentinel-2-c1-l2a/48/S/TH/2026/8/S2A_T48STH_20260806T040209_L2A/TCI.tif",
+      "sourceBandAssets": {
+        "red": "https://e84-earth-search-sentinel-data.s3.us-west-2.amazonaws.com/sentinel-2-c1-l2a/48/S/TH/2026/8/S2A_T48STH_20260806T040209_L2A/B04.tif",
+        "green": "https://e84-earth-search-sentinel-data.s3.us-west-2.amazonaws.com/sentinel-2-c1-l2a/48/S/TH/2026/8/S2A_T48STH_20260806T040209_L2A/B03.tif",
+        "blue": "https://e84-earth-search-sentinel-data.s3.us-west-2.amazonaws.com/sentinel-2-c1-l2a/48/S/TH/2026/8/S2A_T48STH_20260806T040209_L2A/B02.tif"
+      }
+    },
+    {
+      "id": "S2A_T48SUH_20260806T040209_L2A",
+      "mgrsTile": "48SUH",
+      "cloudCover": 0.13,
+      "datetime": "2026-08-06T04:07:53.440000Z",
+      "platform": "sentinel-2a",
+      "visualAsset": "https://e84-earth-search-sentinel-data.s3.us-west-2.amazonaws.com/sentinel-2-c1-l2a/48/S/UH/2026/8/S2A_T48SUH_20260806T040209_L2A/TCI.tif",
+      "sourceBandAssets": {
+        "red": "https://e84-earth-search-sentinel-data.s3.us-west-2.amazonaws.com/sentinel-2-c1-l2a/48/S/UH/2026/8/S2A_T48SUH_20260806T040209_L2A/B04.tif",
+        "green": "https://e84-earth-search-sentinel-data.s3.us-west-2.amazonaws.com/sentinel-2-c1-l2a/48/S/UH/2026/8/S2A_T48SUH_20260806T040209_L2A/B03.tif",
+        "blue": "https://e84-earth-search-sentinel-data.s3.us-west-2.amazonaws.com/sentinel-2-c1-l2a/48/S/UH/2026/8/S2A_T48SUH_20260806T040209_L2A/B02.tif"
+      }
+    },
+    {
+      "id": "S2A_T48STJ_20260806T040209_L2A",
+      "mgrsTile": "48STJ",
+      "cloudCover": 0.42,
+      "datetime": "2026-08-06T04:07:43.255000Z",
+      "platform": "sentinel-2a",
+      "visualAsset": "https://e84-earth-search-sentinel-data.s3.us-west-2.amazonaws.com/sentinel-2-c1-l2a/48/S/TJ/2026/8/S2A_T48STJ_20260806T040209_L2A/TCI.tif",
+      "sourceBandAssets": {
+        "red": "https://e84-earth-search-sentinel-data.s3.us-west-2.amazonaws.com/sentinel-2-c1-l2a/48/S/TJ/2026/8/S2A_T48STJ_20260806T040209_L2A/B04.tif",
+        "green": "https://e84-earth-search-sentinel-data.s3.us-west-2.amazonaws.com/sentinel-2-c1-l2a/48/S/TJ/2026/8/S2A_T48STJ_20260806T040209_L2A/B03.tif",
+        "blue": "https://e84-earth-search-sentinel-data.s3.us-west-2.amazonaws.com/sentinel-2-c1-l2a/48/S/TJ/2026/8/S2A_T48STJ_20260806T040209_L2A/B02.tif"
+      }
+    },
+    {
+      "id": "S2A_T48SUJ_20260806T040209_L2A",
+      "mgrsTile": "48SUJ",
+      "cloudCover": 0.0,
+      "datetime": "2026-08-06T04:07:39.233000Z",
+      "platform": "sentinel-2a",
+      "visualAsset": "https://e84-earth-search-sentinel-data.s3.us-west-2.amazonaws.com/sentinel-2-c1-l2a/48/S/UJ/2026/8/S2A_T48SUJ_20260806T040209_L2A/TCI.tif",
+      "sourceBandAssets": {
+        "red": "https://e84-earth-search-sentinel-data.s3.us-west-2.amazonaws.com/sentinel-2-c1-l2a/48/S/UJ/2026/8/S2A_T48SUJ_20260806T040209_L2A/B04.tif",
+        "green": "https://e84-earth-search-sentinel-data.s3.us-west-2.amazonaws.com/sentinel-2-c1-l2a/48/S/UJ/2026/8/S2A_T48SUJ_20260806T040209_L2A/B03.tif",
+        "blue": "https://e84-earth-search-sentinel-data.s3.us-west-2.amazonaws.com/sentinel-2-c1-l2a/48/S/UJ/2026/8/S2A_T48SUJ_20260806T040209_L2A/B02.tif"
+      }
+    }
+  ],
+  "references": {
+    "registry": "https://registry.opendata.aws/sentinel-2-l2a-cogs/",
+    "stac": "https://earth-search.aws.element84.com/v1",
+    "earthSearch": "https://github.com/Element84/earth-search",
+    "license": "https://cds.climate.copernicus.eu/licences/ec-sentinel"
+  }
+}

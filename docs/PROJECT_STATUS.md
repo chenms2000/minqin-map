@@ -1,12 +1,12 @@
 # 项目状态
 
 - 项目：site
-- 最后更新：2026-08-12
-- 维护状态：P0–P5 全站改造完成，等待发布决策
+- 最后更新：2026-08-13
+- 维护状态：P0–P7 改造完成，等待发布决策
 
 ## 当前目标
 
-保持一键五章导览、单地图叙事、双向证据网络与“纪录片 × 数字博物馆”界面稳定，并继续以缩放响应的制图层级承载自由地图、故事地图与自动导览。
+保持一键五章导览、单地图叙事、双向证据网络与“纪录片 × 数字博物馆”界面稳定，并以真实 Sentinel-2 地表纹理、弱 hillshade 与矢量制图融合呈现荒漠—绿洲—水体—聚落/道路关系。
 
 ## 已完成
 
@@ -41,6 +41,14 @@
 - 地图故事点已改为 44px 可操作区内的测绘站式 ring + core 符号；selected 点位具备克制 halo、ARIA 状态与其余点位降权，手机抽屉打开后仍保留点位可见。
 - DOM 语境标签已按城市、水体、镇级分层控制；point-list 与图例改为可展开的低干扰控件，MapLibre 原生控件、地图工具和 attribution 完成视觉收敛。
 - 地图镜头已用小型 helper 统一 selected、tour、timeline、resource 与关系点位的 zoom / pitch / bearing，不改章节 `mapView`、播放时长或状态机。
+- 已完成 P6 本地地形阴影：Mapzen Terrain Tiles（民勤区高缩放为 USGS SRTM、低缩放合成含 GMTED2010）裁切至 `[102.40, 37.75, 103.80, 39.40]`，生成 z7–12、595 瓦片、约 17.9 MiB 的本地 Terrarium PMTiles。
+- DEM provenance 记录 provider、dataset、公共领域/署名条件、2026-08-12 获取日期、分辨率、原始范围、裁切范围、瓦片响应源文件、编码和 SHA-256；生成脚本固定并校验 go-pmtiles v1.31.2。
+- Hillshade 在基础 PMTiles `mapReady` 后异步加载；P7 加入 surface 后重排为 surface → hillshade → `landcover`，失败只标记 terrain unavailable，不触发基础 fallback。自由、Story、Tour 复用一层并按模式降权，未启用 3D terrain。
+- 已完成 P7 真实地表融合：采用 Element 84 / AWS Open Data 的 Sentinel-2 Collection 1 L2A，选取 2026-08-06、覆盖民勤的 4 个低云场景，以官方 B04/B03/B02 TCI 为自然色来源，生成覆盖 `[102.40, 37.75, 103.80, 39.40]` 的 30m 视觉级本地 raster PMTiles。
+- Surface archive 为 z7–13、2212 个 JPEG 瓦片、21,406,499 bytes；provenance 记录 provider、dataset、许可与再分发声明、获取/场景日期、云量、波段、分辨率、范围、处理链、场景资产和 SHA-256。
+- P7A 固定默认视角 Before/After 一次通过视觉 Gate：After 可直接辨认农田格网、绿洲边缘、裸地与聚落周边结构，不再是单纯浅色几何面；随后才扩展到完整 `mapBounds`。
+- Surface 在基础矢量图 `mapReady` 后按 HTTP Range 渐进加载，实测 `bytes=0-511` 返回 206；surface 与 terrain 各自独立失败，均不触发基础 fallback。自由 / Story / Tour 复用同一 raster layer 并逐级减弱。
+- Vector landcover / landuse 已改为半透明分类罩色，hillshade 保持弱地貌，水脉关系线降权；“民勤县”DOM 标签去除胶囊背景并改为中英制图文字。
 
 ## 正在进行
 
@@ -50,12 +58,12 @@
 
 - 白刺果名称已经确认，相关现场记录已统一使用确认名称。
 - 后续采访素材补齐授权范围、日期与转录记录。
-- 由用户决定是否 push、部署或发起进一步人工回归。
+- 由用户决定是否提交、push、部署或发起系统 Fullscreen API 的人工回归。
 
 ## 已知风险
 
-- `public/` 中包含已跟踪的地图、视频和图片资源；当前最大单文件约 2.57 MB，未达到常见 Git 托管单文件限制，但会增加仓库体积。
-- 本轮 P0–P5 已按阶段提交，但尚未 push 或部署。
+- `public/` 中新增约 17.9 MiB terrain 与 20.4 MiB surface PMTiles；单文件仍低于常见 Git 托管限制。Surface 使用 Range 按需读取，terrain 仍沿用 P6 整包增强加载。
+- P6–P7 尚未提交、push 或部署；P0–P5 已有本地提交但尚未 push 或部署。
 - GPS 采样线来自影像元数据，只反映部分拍摄点；不得解释为完整路线、基地边界或导航坐标。
 - 白刺果名称已确认；直播展示农产品已确认为哈密瓜。
 
@@ -63,5 +71,5 @@
 
 - 构建命令：`npm run build`
 - 测试命令：`npm test`
-- 当前结构测试：16 项（新增本地 PMTiles/单地图入口、zoom-aware 制图层级、selected marker、路线语义与无在线第三方底图保护）
+- 当前结构测试：20 项（包含有界 terrain / surface PMTiles 与 provenance、两类增强独立失败、Range surface、本地运行时、单 MapLibre、无 3D terrain 与路线/selected 语义保护）
 - 部署方式：OpenAI Sites / Cloudflare（由 `.openai/hosting.json` 与 Vite 配置驱动）

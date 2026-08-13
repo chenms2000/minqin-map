@@ -24,3 +24,6 @@
 | 2026-08-12 | 来源摘要改为面向访客的事实解释，并为来源分镜单独分配 7 秒 | 避免“支撑……”式内部审核语气，并为扩写后的内容保留基本阅读时间 | 来源数据、内容校验与自动导览 |
 | 2026-08-12 | 全站采用“绿洲纪录片 × 数字博物馆”双表面系统；`Experience` 继续独占播放状态，分镜仅派生 `media / source / data / specimen` 视觉类型 | 在不改变内容模型、时长与地图数据的前提下，降低展框控制密度并提高来源和长文可读性 | 首页、长页、自由地图、数字展框、响应式与无障碍 |
 | 2026-08-12 | 地图故事点使用“固定无障碍点击区 + 测绘站式可见符号”，selected 状态由 `Experience` 单一选点状态传入地图；DOM 语境标签按 zoom 分级显隐 | 让放大后的点位不过粗、选中关系可辨，并在不牺牲本地中文字形与单地图架构的前提下降低低缩放标签密度 | 地图 marker、语境标签、故事抽屉与后续点位扩展 |
+| 2026-08-12 | 地形只作为基础地图完成后的 hillshade progressive enhancement：采用有界本地 Terrarium PMTiles，按实际 landcover 层序插入；不启用 `setTerrain()`，terrain 失败不得触发 base fallback | 保留单 MapLibre、离线与事实数据边界，同时用真实高程提供低干扰空间深度；将可选增强与核心地图可用性解耦 | 地图加载链、离线资产、attribution、Story/Tour 模式与后续地形维护 |
+| 2026-08-13 | 真实地表纹理由有界 Sentinel-2 L2A raster PMTiles 提供，并以 HTTP Range 作为独立 progressive enhancement；surface 为主纹理、hillshade 为弱地貌、半透明 vector 为结构，任一增强失败均不得切换 base fallback | 纯矢量分类面无法表达农田、绿洲边缘、裸地与聚落环境；真实可追溯纹理能增加空间信息，同时 Range 与独立失效保持离线部署、单 MapLibre 和基础地图稳定 | 地图底图层序、surface provenance、加载/降级、三种展示模式与后续地表更新 |
+| 2026-08-13 | 地图选中态继续由 `Experience` 派生唯一 `mapSelectedPointId`；GPS 精细影像使用独立、局部、可失效的 10m focus PMTiles，而 interaction bounds 与真实影像 render context 分离 | 保持地图、抽屉与 TourStage 状态一致，避免 marker DOM 重建和非 GPS 点伪精确；局部增强不扩大基础加载链或用户可拖动范围 | 点位交互、Tour seek、GPS 镜头、surface focus、地图边界维护 |

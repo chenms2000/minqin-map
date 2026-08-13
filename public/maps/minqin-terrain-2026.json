@@ -1,0 +1,88 @@
+{
+  "asset": "minqin-terrain-2026.pmtiles",
+  "assetBytes": 36191746,
+  "assetSha256": "1c93a7f517c54382163366b2d821fe4272a765f0bd28222bdc55308cc865a7ab",
+  "provider": "Mapzen, a Linux Foundation project, via the AWS Open Data Registry",
+  "dataset": "Mapzen Terrain Tiles",
+  "sourceDatasets": [
+    {
+      "name": "USGS SRTM 1 Arc-Second Global",
+      "resolution": "1 arc-second (approximately 30 metres)",
+      "range": "global land coverage from 60° N to 56° S",
+      "license": "Public domain; USGS credit requested for redistribution and publication"
+    },
+    {
+      "name": "USGS GMTED2010",
+      "resolution": "7.5 arc-seconds (approximately 250 metres) in Mapzen low-zoom composites",
+      "range": "global",
+      "license": "Public domain; subject to the USGS standard disclaimer and requested credit"
+    }
+  ],
+  "redistribution": "Retain Mapzen hosted-service attribution and credit SRTM/GMTED2010 to the U.S. Geological Survey.",
+  "acquiredAt": "2026-08-13",
+  "mapBounds": [
+    102.45,
+    37.8,
+    103.75,
+    39.35
+  ],
+  "cropBounds": [
+    102.12890625,
+    37.474858084971025,
+    104.0625,
+    39.67337039176559
+  ],
+  "renderContextBounds": [
+    102.12890625,
+    37.474858084971025,
+    104.0625,
+    39.67337039176559
+  ],
+  "safetyMarginDegrees": 0.3,
+  "minZoom": 7,
+  "maxZoom": 12,
+  "tileCount": 1059,
+  "sourceEncoding": "Terrarium RGB PNG (elevation = red*256 + green + blue/256 - 32768)",
+  "archiveEncoding": "PMTiles v3 raster archive; PNG tile payloads; no tile compression",
+  "generationTool": "go-pmtiles v1.31.2",
+  "imagerySourcesReportedByTiles": [
+    "gmted/30N090E_20101117_gmted_mea075.tif",
+    "srtm/N36E101.tif",
+    "srtm/N36E102.tif",
+    "srtm/N36E103.tif",
+    "srtm/N36E104.tif",
+    "srtm/N36E105.tif",
+    "srtm/N36E106.tif",
+    "srtm/N37E101.tif",
+    "srtm/N37E102.tif",
+    "srtm/N37E103.tif",
+    "srtm/N37E104.tif",
+    "srtm/N37E105.tif",
+    "srtm/N37E106.tif",
+    "srtm/N38E101.tif",
+    "srtm/N38E102.tif",
+    "srtm/N38E103.tif",
+    "srtm/N38E104.tif",
+    "srtm/N38E105.tif",
+    "srtm/N38E106.tif",
+    "srtm/N39E101.tif",
+    "srtm/N39E102.tif",
+    "srtm/N39E103.tif",
+    "srtm/N39E104.tif",
+    "srtm/N39E105.tif",
+    "srtm/N39E106.tif",
+    "srtm/N40E101.tif",
+    "srtm/N40E102.tif",
+    "srtm/N40E103.tif",
+    "srtm/N40E104.tif",
+    "srtm/N40E105.tif",
+    "srtm/N40E106.tif"
+  ],
+  "references": {
+    "registry": "https://registry.opendata.aws/terrain-tiles/",
+    "dataSources": "https://github.com/tilezen/joerd/blob/master/docs/data-sources.md",
+    "attribution": "https://github.com/tilezen/joerd/blob/master/docs/attribution.md",
+    "srtm": "https://www.usgs.gov/centers/eros/science/usgs-eros-archive-digital-elevation-shuttle-radar-topography-mission-srtm-1",
+    "srtmDoi": "https://doi.org/10.5066/F7PR7TFT"
+  }
+}

@@ -144,6 +144,51 @@ test("map archive is a lightweight valid PMTiles package", async () => {
   assert.equal(archive.subarray(0, 7).toString("utf8"), "PMTiles");
 });
 
+test("local terrain archive is a bounded, traceable raster PMTiles package", async () => {
+  const archiveUrl = new URL("../public/maps/minqin-terrain-2026.pmtiles", import.meta.url);
+  const provenanceUrl = new URL("../public/maps/minqin-terrain-2026.json", import.meta.url);
+  const [archiveStat, archive, provenanceText] = await Promise.all([stat(archiveUrl), readFile(archiveUrl), readFile(provenanceUrl, "utf8")]);
+  const provenance = JSON.parse(provenanceText);
+  assert.ok(archiveStat.size > 5_000_000 && archiveStat.size < 60_000_000, "terrain archive should remain a bounded Minqin render context");
+  assert.equal(archive.subarray(0, 7).toString("utf8"), "PMTiles");
+  assert.equal(archive[7], 3, "terrain archive should use PMTiles v3");
+  assert.equal(archive[99], 2, "terrain payload should be PNG for Terrarium decoding");
+  assert.deepEqual([archive[100], archive[101]], [7, 12]);
+  assert.equal(provenance.provider, "Mapzen, a Linux Foundation project, via the AWS Open Data Registry");
+  assert.equal(provenance.acquiredAt, "2026-08-13");
+  assert.deepEqual(provenance.mapBounds, [102.45, 37.8, 103.75, 39.35]);
+  assert.deepEqual(provenance.cropBounds, provenance.renderContextBounds);
+  assert.ok(provenance.safetyMarginDegrees >= 0.3);
+  assert.ok(provenance.tileCount > 595);
+  assert.ok(provenance.sourceDatasets.some((dataset) => /SRTM 1 Arc-Second Global/.test(dataset.name)));
+  assert.ok(provenance.imagerySourcesReportedByTiles.some((source) => source.startsWith("srtm/")));
+  assert.match(provenance.archiveEncoding, /PMTiles v3 raster archive/);
+});
+
+test("local Sentinel-2 surface archive is traceable, bounded and raster encoded", async () => {
+  const archiveUrl = new URL("../public/maps/minqin-surface-2026.pmtiles", import.meta.url);
+  const provenanceUrl = new URL("../public/maps/minqin-surface-2026.json", import.meta.url);
+  const [archiveStat, archive, provenanceText] = await Promise.all([stat(archiveUrl), readFile(archiveUrl), readFile(provenanceUrl, "utf8")]);
+  const provenance = JSON.parse(provenanceText);
+  assert.ok(archiveStat.size > 2_000_000 && archiveStat.size < 60_000_000, "surface archive should remain a focused Minqin crop");
+  assert.equal(archive.subarray(0, 7).toString("utf8"), "PMTiles");
+  assert.equal(archive[7], 3, "surface archive should use PMTiles v3");
+  assert.equal(archive[99], 3, "surface payload should be JPEG raster tiles");
+  assert.deepEqual([archive[100], archive[101]], [7, 13]);
+  assert.match(provenance.provider, /Copernicus.+Element 84.+AWS Open Data/);
+  assert.equal(provenance.dataset, "Sentinel-2 Collection 1 Level-2A Cloud-Optimized GeoTIFFs");
+  assert.equal(provenance.redistributionNotice, "Contains modified Copernicus Sentinel data 2026");
+  assert.equal(provenance.acquiredAt, "2026-08-13");
+  assert.equal(provenance.sceneDate, "2026-08-06");
+  assert.deepEqual(provenance.mapBounds, [102.45, 37.8, 103.75, 39.35]);
+  assert.deepEqual(provenance.cropBounds, provenance.renderContextBounds);
+  assert.equal(provenance.scope, "full");
+  assert.deepEqual(provenance.bands, ["B04 red", "B03 green", "B02 blue"]);
+  assert.ok(provenance.scenes.length >= 4);
+  assert.ok(provenance.processing.some((step) => /complete real-imagery coverage check/.test(step)));
+  assert.match(provenance.archiveEncoding, /PMTiles v3 raster archive/);
+});
+
 test("local map keeps one offline MapLibre entry and its route semantics", async () => {
   const experience = await readFile(new URL("../app/components/experience/experience.tsx", import.meta.url), "utf8");
   const hook = await readFile(new URL("../app/hooks/use-minqin-map.ts", import.meta.url), "utf8");
@@ -154,12 +199,66 @@ test("local map keeps one offline MapLibre entry and its route semantics", async
   assert.equal((experience.match(/<InteractiveMap\b/g) ?? []).length, 1);
   assert.equal((hook.match(/new MapLibreMap\(/g) ?? []).length, 1);
   assert.match(config, /pmtiles:\/\//);
+  assert.match(config, /localTerrainArchivePath = "\/maps\/minqin-terrain-2026\.pmtiles"/);
+  assert.match(config, /localSurfaceArchivePath = "\/maps\/minqin-surface-2026\.pmtiles"/);
+  assert.match(config, /localSurfaceFocusArchivePath = "\/maps\/minqin-surface-focus-2026\.pmtiles"/);
   assert.match(mapSource, /叙事路径，非导航路线/);
   assert.match(mapSource, /影像 GPS 采样线/);
   assert.match(mapSource, /非完整轨迹、非导航路线/);
   assert.match(experience, /matchMedia\("\(prefers-reduced-motion: reduce\)"\)/);
+  assert.match(experience, /async function toggleFullscreen\(\)[\s\S]*requestFullscreen\(\)[\s\S]*catch/);
   assert.match(responsive, /@media \(prefers-reduced-motion: reduce\)/);
   assert.doesNotMatch(mapSource, /api\.mapbox\.com|maps\.google|tile\.openstreetmap|tiles\.stadiamaps|basemaps\.cartocdn|tiles\.openfreemap/i);
+});
+
+test("hillshade progressively enhances the base map without enabling terrain or fallback coupling", async () => {
+  const experience = await readFile(new URL("../app/components/experience/experience.tsx", import.meta.url), "utf8");
+  const hook = await readFile(new URL("../app/hooks/use-minqin-map.ts", import.meta.url), "utf8");
+  const config = await readFile(new URL("../app/lib/map-config.ts", import.meta.url), "utf8");
+  const mapSource = `${experience}\n${hook}\n${config}`;
+  const enhancement = hook.match(/async function addTerrainEnhancement[\s\S]*?\n {4}}\n\n {4}async function addSurfaceFocusEnhancement/)?.[0] ?? "";
+  assert.ok(enhancement.length > 0, "terrain enhancement should remain an isolated loading stage");
+  assert.match(hook, /setMapReady\(true\);[\s\S]*addSurfaceEnhancement\(map\)[\s\S]*addSurfaceFocusEnhancement\(map\)[\s\S]*addTerrainEnhancement\(map\)/);
+  assert.match(enhancement, /type: "raster-dem"/);
+  assert.match(enhancement, /encoding: "terrarium"/);
+  assert.match(enhancement, /type: "hillshade"/);
+  assert.match(enhancement, /terrainState = "unavailable"/);
+  assert.doesNotMatch(enhancement, /setMapFallback/);
+  assert.doesNotMatch(mapSource, /\.setTerrain\s*\(/);
+  assert.equal((hook.match(/new MapLibreMap\(/g) ?? []).length, 1);
+  assert.equal((experience.match(/<InteractiveMap\b/g) ?? []).length, 1);
+  assert.match(config, /reliefShadow/);
+  assert.match(config, /reliefHighlight/);
+  assert.match(config, /reliefAccent/);
+  for (const mode of ["free", "story", "tour"]) assert.match(config, new RegExp(`${mode}: \\[7\\.2,`));
+  assert.match(config, /hillshadeInsertionBeforeId/);
+  assert.match(config, /landcoverIndex >= 0 \? styleLayers\[landcoverIndex\]\?\.id/);
+  assert.match(experience, /presentationMode: mapPresentationMode/);
+  assert.match(config, /© OpenStreetMap contributors/);
+  assert.match(config, /SRTM \/ GMTED2010 courtesy of USGS/);
+  assert.doesNotMatch(mapSource, /https?:\/\/[^"'`]*(?:\{z\}|\.png|\.webp|\.jpg)/i, "runtime map source must not contain an online tile endpoint");
+});
+
+test("surface texture progressively enhances vector cartography without coupling failures", async () => {
+  const hook = await readFile(new URL("../app/hooks/use-minqin-map.ts", import.meta.url), "utf8");
+  const config = await readFile(new URL("../app/lib/map-config.ts", import.meta.url), "utf8");
+  const mapCss = await readFile(new URL("../app/styles/map.css", import.meta.url), "utf8");
+  const enhancement = hook.match(/async function addSurfaceEnhancement[\s\S]*?\n {4}}\n\n {4}async function addTerrainEnhancement/)?.[0] ?? "";
+  assert.ok(enhancement.length > 0, "surface enhancement should remain an isolated loading stage");
+  assert.match(enhancement, /new PMTiles\(surfaceUrl\)/, "surface should use HTTP Range rather than loading the full archive into memory");
+  assert.match(enhancement, /type: "raster"/);
+  assert.match(enhancement, /surfaceState = "unavailable"/);
+  assert.doesNotMatch(enhancement, /setMapFallback|response\.blob|new File/);
+  assert.match(config, /surfaceRasterPaint/);
+  assert.match(config, /surfaceInsertionBeforeId/);
+  assert.match(config, /Contains modified Copernicus Sentinel data 2026/);
+  for (const mode of ["free", "story", "tour"]) assert.match(config, new RegExp(`${mode}: \\[7\\.2,`));
+  assert.match(config, /layer\.id === "landcover"[\s\S]*fill-opacity/);
+  assert.match(config, /water: \{ width:[\s\S]*opacity:/);
+  assert.match(mapCss, /map-context-label[\s\S]*background: transparent/);
+  assert.match(mapCss, /MINQIN COUNTY|map-context-label\.city small/);
+  assert.doesNotMatch(`${hook}\n${config}`, /https?:\/\/[^"'`]*(?:\{z\}|\.png|\.webp|\.jpg)/i, "runtime surface source must remain local");
+  assert.doesNotMatch(`${hook}\n${config}`, /\.setTerrain\s*\(/);
 });
 
 test("local map establishes zoom-aware cartographic and selected-marker hierarchy", async () => {
@@ -167,15 +266,77 @@ test("local map establishes zoom-aware cartographic and selected-marker hierarch
   const hook = await readFile(new URL("../app/hooks/use-minqin-map.ts", import.meta.url), "utf8");
   assert.match(config, /cartographicPalette/);
   assert.match(config, /cartographicTuning/);
-  assert.match(config, /zoomExpression\(\[7\.2, 0\.54/);
+  assert.match(config, /layer\.id === "landcover"/);
+  assert.match(config, /"fill-opacity": zoomExpression/);
   for (const roadClass of ["highway", "major", "minor", "service"]) assert.match(config, new RegExp(`${roadClass}: \\{ minZoom:`));
   assert.match(config, /layer\.id === "buildings"/);
   assert.match(config, /"line-opacity": zoomExpression\(opacityStops\)/);
   for (const route of ["practiceHalo", "practice", "field", "water"]) assert.match(hook, new RegExp(`cartographicTuning\\.routes\\.${route}\\.(?:width|opacity)`));
   assert.match(hook, /map\.on\("zoom", updateContextLabelDensity\)/);
-  assert.match(hook, /selectedId === point\.id/);
+  assert.match(hook, /mapSelectedPointId === pointId/);
+  assert.match(hook, /pointMarkers\.current/);
   assert.match(hook, /is-selected/);
   assert.match(hook, /aria-current/);
+});
+
+test("map selection, tour seek and drawer replacement share one stable point identity", async () => {
+  const experience = await readFile(new URL("../app/components/experience/experience.tsx", import.meta.url), "utf8");
+  const hook = await readFile(new URL("../app/hooks/use-minqin-map.ts", import.meta.url), "utf8");
+  const map = await readFile(new URL("../app/components/map/interactive-map.tsx", import.meta.url), "utf8");
+  assert.match(experience, /const mapSelectedPointId = !tourMode/);
+  for (const selection of ["activeTourPoint", "timelinePoint", "waterStage.pointId", "selectedResourcePoint"]) assert.match(experience, new RegExp(selection.replace(".", "\\.")));
+  const seek = experience.match(/function seekTourToPoint[\s\S]*?\n {2}}/)?.[0] ?? "";
+  assert.match(seek, /chapterFramesById\.get/);
+  assert.match(seek, /frame\.kind === "point"/);
+  assert.match(seek, /durationSeconds/);
+  assert.match(seek, /chapterElapsedRef\.current = elapsedSeconds/);
+  assert.match(seek, /setTourPlayback\("paused"\)/);
+  assert.match(experience, /seekTourToPoint\(pointId\)/);
+  assert.match(experience, /drawerScroll\.current\.scrollTop = 0/);
+  assert.match(experience, /isFirstOpen/);
+  assert.match(map, /drawerScrollRef/);
+  assert.doesNotMatch(hook, /\[activeLayer, activePoints, mapReady, mapSelectedPointId\][\s\S]*new Marker/);
+  assert.match(hook, /Map<string, PointMarkerEntry>/);
+});
+
+test("GPS focus raster is local, traceable and independently degradable", async () => {
+  const archiveUrl = new URL("../public/maps/minqin-surface-focus-2026.pmtiles", import.meta.url);
+  const provenanceUrl = new URL("../public/maps/minqin-surface-focus-2026.json", import.meta.url);
+  const [archive, provenanceText, hook, config, experience] = await Promise.all([
+    readFile(archiveUrl),
+    readFile(provenanceUrl, "utf8"),
+    readFile(new URL("../app/hooks/use-minqin-map.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/lib/map-config.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/components/experience/experience.tsx", import.meta.url), "utf8"),
+  ]);
+  const provenance = JSON.parse(provenanceText);
+  assert.equal(archive.subarray(0, 7).toString("utf8"), "PMTiles");
+  assert.deepEqual([archive[99], archive[100], archive[101]], [3, 12, 14]);
+  assert.equal(provenance.scope, "focus");
+  assert.equal(provenance.workingResolution, "10 metres per pixel");
+  assert.match(provenance.focusBoundsDerivedFrom, /GPS实拍点/);
+  assert.equal(provenance.focusBufferKilometres, 2.5);
+  const enhancement = hook.match(/async function addSurfaceFocusEnhancement[\s\S]*?\n {4}}/)?.[0] ?? "";
+  assert.match(enhancement, /get\("focus"\) === "missing"/);
+  assert.match(enhancement, /new PMTiles\(focusUrl\)/);
+  assert.match(enhancement, /focusState = "unavailable"/);
+  assert.doesNotMatch(enhancement, /setMapFallback|response\.blob|new File/);
+  assert.match(config, /surfaceFocus:[\s\S]*sourceMinZoom: 12[\s\S]*nativeMaxZoom: 14/);
+  assert.match(experience, /gpsZoom: 13\.85/);
+  assert.match(experience, /point\.accuracy === "GPS实拍点" \? pointCameraTuning\.gpsZoom : pointCameraTuning\.contextZoom/);
+});
+
+test("render context is wider than interaction bounds and shared by surface and terrain preparation", async () => {
+  const config = await readFile(new URL("../app/lib/map-config.ts", import.meta.url), "utf8");
+  const surfaceScript = await readFile(new URL("../scripts/prepare-map-surface.py", import.meta.url), "utf8");
+  const terrainScript = await readFile(new URL("../scripts/prepare-map-terrain.py", import.meta.url), "utf8");
+  assert.match(config, /INTERACTION_BOUNDS/);
+  assert.match(config, /RENDER_CONTEXT_BOUNDS/);
+  assert.match(config, /102\.12890625/);
+  assert.match(surfaceScript, /RENDER_CONTEXT_BOUNDS = \[102\.12890625/);
+  assert.match(terrainScript, /RENDER_CONTEXT_BOUNDS = \[102\.12890625/);
+  assert.match(surfaceScript, /refusing solid-color fill/);
+  assert.doesNotMatch(surfaceScript, /rgb\[~valid\] =/);
 });
 
 test("guided tour derives its timeline from unique frame media durations", async () => {

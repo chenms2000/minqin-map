@@ -12,6 +12,7 @@ type InteractiveMapProps = {
   frameRef: RefObject<HTMLDivElement | null>;
   containerRef: RefObject<HTMLDivElement | null>;
   closeButtonRef: RefObject<HTMLButtonElement | null>;
+  drawerScrollRef: RefObject<HTMLDivElement | null>;
   activeLayer: StoryLayer;
   activePoints: StoryPoint[];
   selected: StoryPoint | null;
@@ -29,7 +30,7 @@ type InteractiveMapProps = {
   onToggleFullscreen: () => void;
 };
 
-export function InteractiveMap({ sectionRef, frameRef, containerRef, closeButtonRef, activeLayer, activePoints, selected, selectedMedia, selectedSources, mapReady, mapFallback, mapProgress, storyMode, storyChapter, onLayerChange, onPointActivate, onCloseStory, onResetMap, onToggleFullscreen }: InteractiveMapProps) {
+export function InteractiveMap({ sectionRef, frameRef, containerRef, closeButtonRef, drawerScrollRef, activeLayer, activePoints, selected, selectedMedia, selectedSources, mapReady, mapFallback, mapProgress, storyMode, storyChapter, onLayerChange, onPointActivate, onCloseStory, onResetMap, onToggleFullscreen }: InteractiveMapProps) {
   return <section className={`map-section ${storyMode ? "is-story-stage" : ""}`} id="map" ref={sectionRef} tabIndex={-1} aria-labelledby="map-title">
     <div className="map-header">
       <div><div className="section-index light">02 / 数字地图</div><p className="eyebrow light">A LIVING ATLAS OF MINQIN</p><h2 id="map-title">选择一层，进入民勤。</h2></div>
@@ -54,7 +55,7 @@ export function InteractiveMap({ sectionRef, frameRef, containerRef, closeButton
       <details className="map-legend"><summary>图例</summary><div aria-label="地图图例"><strong>图例与定位精度</strong><span><i className="legend-field" />团队实践</span><span><i className="legend-reference" />公开资料</span><span><i className="legend-approx" />县域 / 村级近似</span><span><i className="legend-gps" />GPS 实拍点</span><span><i className="legend-gps-track" />影像 GPS 采样线</span><small>红色虚线：叙事路径，非导航路线<br />采样线：非完整轨迹、非导航路线</small></div></details>
       <details className="point-list"><summary>{activePoints.length} 个点位</summary><div aria-label="当前图层全部点位">{activePoints.map((point, index) => <button key={point.id} onClick={() => onPointActivate(point.id)} className={selected?.id === point.id ? "selected" : ""}><span>{String(index + 1).padStart(2, "0")}</span><div><strong>{point.title}</strong><small>{point.contentOrigin} · {point.accuracy}</small></div></button>)}</div></details>
       <aside className={`story-drawer ${selected ? "open" : ""}`} aria-hidden={!selected} aria-label="地图故事卡">
-        {selected && <><button ref={closeButtonRef} className="drawer-close" onClick={onCloseStory} aria-label="关闭故事卡">×</button><div className="drawer-scroll">
+        {selected && <><button ref={closeButtonRef} className="drawer-close" onClick={onCloseStory} aria-label="关闭故事卡">×</button><div className="drawer-scroll" ref={drawerScrollRef}>
           <p className="eyebrow">{selected.eyebrow}</p><h3>{selected.title}</h3>
           <div className="story-meta"><span className={accuracyClass(selected.accuracy)}>{selected.accuracy}</span><span className="origin">{selected.contentOrigin}</span><time>{selected.date}</time></div>
           <p className="evidence-line"><b>{selected.evidenceStatus}</b>{selected.locationNote}</p><p className="story-summary">{selected.summary}</p><p className="story-summary-en">{selected.summaryEn}</p>
