@@ -5,10 +5,14 @@ import { chapterFramesById, herbs, mediaById, relationshipEdges, sourceById, sto
 import { DigitalExhibit, type ExhibitModule, type ResourceView, type TimelineDay } from "@/app/components/exhibit/digital-exhibit";
 import { InteractiveMap } from "@/app/components/map/interactive-map";
 import { LongFormPage } from "@/app/components/sections/long-form-page";
-import { useMinqinMap } from "@/app/hooks/use-minqin-map";
+import { useMinqinMap, type MapToolPortal } from "@/app/hooks/use-minqin-map";
 import { defaultView } from "@/app/lib/map-config";
 
 const exhibitModules: ExhibitModule[] = ["tour", "field", "water", "resources"];
+const mapToolPortals = [
+  { id: "water-machine", label: "水脉时间机", module: "water", pointId: "shiyang-system" },
+  { id: "herb-cabinet", label: "药材标本柜", module: "resources", pointId: "planned-herbs" },
+] as const satisfies readonly MapToolPortal[];
 export type TourPlaybackState = "idle" | "playing" | "paused" | "completed";
 
 const pointCameraTuning = { waterZoom: 9.2, contextZoom: 9.5, gpsZoom: 13.85, pitch: 45, bearing: -8 } as const;
@@ -102,7 +106,7 @@ export function Experience() {
           ? waterStage.pointId
           : selectedResourcePoint?.id ?? null;
 
-  const { mapContainer, mapInstance, mapFallback, mapReady, mapProgress } = useMinqinMap({ activeLayer, activePoints, mapSelectedPointId, presentationMode: mapPresentationMode, onPointActivate: activateMapPoint });
+  const { mapContainer, mapInstance, mapFallback, mapReady, mapProgress } = useMinqinMap({ activeLayer, activePoints, mapSelectedPointId, presentationMode: mapPresentationMode, toolPortals: mapToolPortals, onPointActivate: activateMapPoint, onToolActivate: openMapTool });
 
   useEffect(() => {
     if (!tourMode || exhibitModule !== "tour" || tourPlayback !== "playing") return;
@@ -276,7 +280,31 @@ export function Experience() {
   function endTour() {
     lastTourCameraKeyRef.current = null;
     setStoryIndex(tourIndex); resetChapterProgress(); setTourPlayback("idle"); setTourMode(false); updateExhibitUrl(null, tourIndex);
-    window.setTimeout(() => { mapInstance.current?.resize(); previousFocus.current?.focus(); }, 90);
+    window.setTimeout(() => {
+      mapInstance.current?.resize();
+      const focusTarget = previousFocus.current?.isConnected ? previousFocus.current : mapSection.current;
+      focusTarget?.focus();
+    }, 90);
+  }
+
+  function openMapTool(module: MapToolPortal["module"]) {
+    previousFocus.current = mapSection.current;
+    lastTourCameraKeyRef.current = null;
+    resetChapterProgress();
+    setTourPlayback("idle");
+    setSelectedId(null);
+    if (module === "water") {
+      setWaterStageIndex(0);
+      setActiveLayer("water");
+    } else {
+      setResourceView("specimen");
+      setResourceIndex(0);
+      setResourceSection("habitat");
+      setActiveLayer("herbs");
+    }
+    setExhibitModule(module);
+    setTourMode(true);
+    updateExhibitUrl(module);
   }
 
   function selectExhibitModule(module: ExhibitModule) {

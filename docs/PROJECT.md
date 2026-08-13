@@ -68,7 +68,8 @@
 - Marker 已从大靶心改为 44px hit area 内的 14–18px 点/细环/虚线环，selected 只增加单层外环。
 - GPS 三点已从既有坐标自动派生 2.5km buffer，生成 10m、z12–14 的本地 `minqin-surface-focus-2026.pmtiles`；`?focus=missing` 可独立退化，GPS 镜头为 13.85，非 GPS 镜头未提高。
 - Terrain render context 已扩至 z13 对齐的 `[102.12890625, 37.474858084971025, 104.0625, 39.67337039176559]`，1059 tiles / 36,191,746 bytes；interaction bounds 保持 base PMTiles 实际边界不变。
-- 本轮将 44 帧自动导览从 357.283 秒压缩为 300.283 秒：图片 81 秒、普通文字 28 秒、来源 110 秒、视频 81.283 秒；视频真实时长与单一 `frame.durationSeconds` 时间轴保持不变。
+- 44 帧自动导览进一步由 300.283 秒收敛为 240.783 秒（UI 约 4:00）：图片 58.5 秒、普通文字 21 秒、来源 80 秒、视频仍为真实 81.283 秒；不删内容且保持单一 `frame.durationSeconds` 时间轴。
+- 自由地图新增“水脉时间机 / 药材标本柜”探索工具 portal，分别运行时锚定既有 `shiyang-system` / `planned-herbs`；portal 不新增坐标或 StoryPoint，并在 Story/Tour 模式隐藏。
 - Tour 镜头已集中为 overview → detail：intro 使用章节 `mapView`，point 及带 pointId 的 media/source 使用点位镜头，同一 camera key 不重复 ease；第三章 intro 降至 zoom 11.45，先展示三个实践点关系。
 - Marker 名称直接派生自 `point.title` 并置于原有 44px button 内；drawer 打开态恢复完整 pointer events，A→B→C 连续换点与滚轮滚动实测通过。
 - 10m focus 已改为本地 PNG-alpha PMTiles（24 tiles / 1,883,514 bytes），裁切外透明并以 320m 短边 feather 混合 30m base；`?focus=missing` 仍独立降级。

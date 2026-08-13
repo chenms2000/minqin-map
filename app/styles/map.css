@@ -48,6 +48,13 @@
 .map-story-marker.is-dimmed .map-story-marker-label { opacity: .38; }
 .map-story-marker.is-selected .map-story-marker-label { color: #173729; background: rgba(250,245,226,.82); font-weight: 750; }
 .map-story-marker:hover .map-story-marker-label, .map-story-marker:focus-visible .map-story-marker-label { color: #173729; opacity: 1; background: rgba(250,245,226,.78); }
+.map-tool-portal-marker { position: relative; display: grid; place-content: center; gap: 2px; width: 96px; min-height: 46px; padding: 7px 10px 7px 17px; border: 1px solid rgba(247,235,198,.64); border-radius: 2px; color: #f8efd2; background: rgba(20,37,29,.82); box-shadow: 0 4px 14px rgba(12,28,19,.2); backdrop-filter: blur(7px); cursor: pointer; font-family: var(--sans); line-height: 1.15; text-align: left; transition: color .18s ease, background .18s ease, border-color .18s ease, transform .18s ease; }
+.map-tool-portal-marker::before { content: ""; position: absolute; left: 8px; top: 50%; width: 6px; height: 6px; border: 1px solid #e5c57e; background: transparent; transform: translateY(-50%) rotate(45deg); pointer-events: none; }
+.map-tool-portal-marker.water::before { border-color: #8fb9b3; }
+.map-tool-portal-marker strong { display: block; max-width: 70px; font-size: 10px; font-weight: 700; letter-spacing: .03em; white-space: normal; }
+.map-tool-portal-kicker { display: block; color: rgba(248,239,210,.62); font-size: 7px; font-weight: 600; letter-spacing: .16em; white-space: nowrap; }
+.map-tool-portal-marker:hover { border-color: rgba(247,235,198,.9); color: #fff; background: rgba(20,37,29,.94); transform: translateY(-2px); }
+.map-tool-portal-marker:focus-visible { outline: 2px solid #e5c57e; outline-offset: 3px; }
 .map-context-label { --context-opacity: 0; display: grid; gap: 1px; padding: 0; border: 0; visibility: hidden; opacity: var(--context-opacity); color: #263d30; background: transparent; box-shadow: none; font-size: 9px; font-weight: 700; letter-spacing: .08em; line-height: 1.15; text-align: center; text-shadow: -1px -1px 0 rgba(247,240,215,.88), 1px -1px 0 rgba(247,240,215,.88), -1px 1px 0 rgba(247,240,215,.88), 1px 1px 0 rgba(247,240,215,.88), 0 2px 5px rgba(42,51,37,.2); white-space: nowrap; pointer-events: none; transition: opacity .18s ease; }
 .map-context-label.is-visible { visibility: visible; }
 .map-context-label.city { color: #173729; font-size: 11px; letter-spacing: .14em; }

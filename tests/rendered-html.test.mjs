@@ -351,23 +351,42 @@ test("render context is wider than interaction bounds and shared by surface and 
   assert.doesNotMatch(surfaceScript, /rgb\[~valid\] =/);
 });
 
-test("guided tour derives its timeline from unique frame media durations", async () => {
+test("four-minute tour preserves videos and exposes map tool portals", async () => {
   const experience = await readFile(new URL("../app/components/experience/experience.tsx", import.meta.url), "utf8");
+  const hook = await readFile(new URL("../app/hooks/use-minqin-map.ts", import.meta.url), "utf8");
+  const storyPoints = await readFile(new URL("../content/story-points.ts", import.meta.url), "utf8");
   const exhibit = (await Promise.all(["digital-exhibit.tsx", "exhibit-chrome.tsx", "tour-stage.tsx"].map((name) => readFile(new URL(`../app/components/exhibit/${name}`, import.meta.url), "utf8")))).join("\n");
   const evidence = await readFile(new URL("../content/evidence-index.ts", import.meta.url), "utf8");
-  assert.match(evidence, /TEXT_FRAME_SECONDS = 4/);
-  assert.match(evidence, /SOURCE_FRAME_SECONDS = 5\.5/);
-  assert.match(evidence, /IMAGE_FRAME_SECONDS = 9/);
+  assert.match(evidence, /TEXT_FRAME_SECONDS = 3/);
+  assert.match(evidence, /SOURCE_FRAME_SECONDS = 4/);
+  assert.match(evidence, /IMAGE_FRAME_SECONDS = 6\.5/);
   assert.match(evidence, /asset\.durationSeconds/);
   assert.match(evidence, /usedTourMediaIds/);
-  const frameCounts = { image: 9, text: 7, source: 20 };
+  const frameCounts = { image: 9, text: 7, source: 20, video: 8 };
   const videoSeconds = 81.283;
-  const totalSeconds = frameCounts.image * 9 + frameCounts.text * 4 + frameCounts.source * 5.5 + videoSeconds;
-  assert.ok(totalSeconds >= 295 && totalSeconds <= 310, `tour should remain within the five-minute target, received ${totalSeconds}`);
+  const totalSeconds = frameCounts.image * 6.5 + frameCounts.text * 3 + frameCounts.source * 4 + videoSeconds;
+  assert.equal(Object.values(frameCounts).reduce((total, count) => total + count, 0), 44);
+  assert.ok(totalSeconds >= 240 && totalSeconds <= 242, `tour should remain within the four-minute target, received ${totalSeconds}`);
   assert.match(experience, /"idle" \| "playing" \| "paused" \| "completed"/);
   assert.match(experience, /frame\.durationSeconds/);
   assert.match(experience, /}, 250\)/);
   assert.match(experience, /setTourPlayback\("completed"\)/);
+  const portalConfig = experience.match(/const mapToolPortals = \[[\s\S]*?satisfies readonly MapToolPortal\[\];/)?.[0] ?? "";
+  assert.match(portalConfig, /pointId: "shiyang-system"/);
+  assert.match(portalConfig, /module: "water"/);
+  assert.match(portalConfig, /pointId: "planned-herbs"/);
+  assert.match(portalConfig, /module: "resources"/);
+  assert.doesNotMatch(portalConfig, /coordinates/);
+  assert.match(hook, /const toolMarkers = useRef/);
+  assert.match(hook, /storyPointById\.get\(portal\.pointId\)/);
+  assert.match(hook, /presentationMode === "free"/);
+  assert.match(hook, /map-tool-portal-marker/);
+  assert.match(experience, /function openMapTool/);
+  assert.match(experience, /setWaterStageIndex\(0\)/);
+  assert.match(experience, /setResourceView\("specimen"\)/);
+  assert.match(experience, /setResourceIndex\(0\)/);
+  assert.match(experience, /updateExhibitUrl\(module\)/);
+  assert.doesNotMatch(storyPoints, /water-machine|herb-cabinet/);
   for (const label of ["自动播放", "暂停", "继续", "五章导览已完成"]) assert.match(exhibit, new RegExp(label));
 });
 

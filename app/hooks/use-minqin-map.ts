@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { AttributionControl, Map as MapLibreMap, Marker, NavigationControl, Popup, ScaleControl, addProtocol, removeProtocol } from "maplibre-gl";
 import { FileSource, PMTiles, Protocol, TileType } from "pmtiles";
-import { fieldTracks, type StoryLayer, type StoryPoint } from "@/content";
+import { fieldTracks, storyPointById, type StoryLayer, type StoryPoint } from "@/content";
 import { accuracyClass } from "@/app/lib/formatters";
 import { cartographicPalette, cartographicTuning, contextLabels, defaultView, hillshadeInsertionBeforeId, localArchiveName, localArchivePath, localMapStyle, localSurfaceArchivePath, localSurfaceFocusArchivePath, localTerrainArchiveName, localTerrainArchivePath, mapBounds, practiceRoute, surfaceAttribution, surfaceFocusAttribution, surfaceFocusLayerId, surfaceFocusRasterPaint, surfaceFocusSourceId, surfaceInsertionBeforeId, surfaceLayerId, surfaceRasterPaint, surfaceSourceId, terrainAttribution, terrainHillshadeLayerId, terrainHillshadePaint, terrainSourceId, waterRoute, zoomExpression, type MapPresentationMode } from "@/app/lib/map-config";
 
@@ -12,17 +12,28 @@ type UseMinqinMapOptions = {
   activePoints: StoryPoint[];
   mapSelectedPointId: string | null;
   presentationMode: MapPresentationMode;
+  toolPortals: readonly MapToolPortal[];
   onPointActivate: (pointId: string) => void;
+  onToolActivate: (module: MapToolPortal["module"]) => void;
+};
+
+export type MapToolPortal = {
+  id: string;
+  label: string;
+  module: "water" | "resources";
+  pointId: string;
 };
 
 type PointMarkerEntry = { marker: Marker; element: HTMLButtonElement };
 
-export function useMinqinMap({ activeLayer, activePoints, mapSelectedPointId, presentationMode, onPointActivate }: UseMinqinMapOptions) {
+export function useMinqinMap({ activeLayer, activePoints, mapSelectedPointId, presentationMode, toolPortals, onPointActivate, onToolActivate }: UseMinqinMapOptions) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<MapLibreMap | null>(null);
   const contextMarkers = useRef<Marker[]>([]);
   const pointMarkers = useRef<Map<string, PointMarkerEntry>>(new Map());
+  const toolMarkers = useRef<Map<string, Marker>>(new Map());
   const activationRef = useRef(onPointActivate);
+  const toolActivationRef = useRef(onToolActivate);
   const presentationModeRef = useRef(presentationMode);
   const [mapFallback, setMapFallback] = useState(false);
   const [mapReady, setMapReady] = useState(false);
@@ -31,6 +42,10 @@ export function useMinqinMap({ activeLayer, activePoints, mapSelectedPointId, pr
   useEffect(() => {
     activationRef.current = onPointActivate;
   }, [onPointActivate]);
+
+  useEffect(() => {
+    toolActivationRef.current = onToolActivate;
+  }, [onToolActivate]);
 
   useEffect(() => {
     presentationModeRef.current = presentationMode;
@@ -72,6 +87,7 @@ export function useMinqinMap({ activeLayer, activePoints, mapSelectedPointId, pr
     const container = mapContainer.current;
     if (!container || mapInstance.current) return;
     const pointMarkerRegistry = pointMarkers.current;
+    const toolMarkerRegistry = toolMarkers.current;
     const protocol = new Protocol();
     const abortController = new AbortController();
     let map: MapLibreMap | null = null;
@@ -278,6 +294,8 @@ export function useMinqinMap({ activeLayer, activePoints, mapSelectedPointId, pr
       contextMarkers.current = [];
       pointMarkerRegistry.forEach(({ marker }) => marker.remove());
       pointMarkerRegistry.clear();
+      toolMarkerRegistry.forEach((marker) => marker.remove());
+      toolMarkerRegistry.clear();
       map?.remove();
       if (protocolRegistered) removeProtocol("pmtiles");
       delete container.dataset.terrainState;
@@ -323,6 +341,38 @@ export function useMinqinMap({ activeLayer, activePoints, mapSelectedPointId, pr
       contextMarkers.current = [];
     };
   }, [mapReady]);
+
+  useEffect(() => {
+    const map = mapInstance.current;
+    if (!map) return;
+    toolMarkers.current.forEach((marker) => marker.remove());
+    const markersForMode = new Map<string, Marker>();
+    toolMarkers.current = markersForMode;
+    if (presentationMode === "free") {
+      toolPortals.forEach((portal) => {
+        const anchorPoint = storyPointById.get(portal.pointId);
+        if (!anchorPoint) return;
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = `map-tool-portal-marker ${portal.module}`;
+        button.setAttribute("aria-label", `打开探索工具：${portal.label}`);
+        const eyebrow = document.createElement("span");
+        eyebrow.className = "map-tool-portal-kicker";
+        eyebrow.textContent = "探索工具";
+        const label = document.createElement("strong");
+        label.textContent = portal.label;
+        button.append(eyebrow, label);
+        button.addEventListener("click", () => toolActivationRef.current(portal.module));
+        const offset: [number, number] = portal.module === "water" ? [52, -12] : [-52, -12];
+        const marker = new Marker({ element: button, anchor: "center", offset }).setLngLat(anchorPoint.coordinates).addTo(map);
+        markersForMode.set(portal.id, marker);
+      });
+    }
+    return () => {
+      markersForMode.forEach((marker) => marker.remove());
+      if (toolMarkers.current === markersForMode) toolMarkers.current.clear();
+    };
+  }, [mapReady, presentationMode, toolPortals]);
 
   useEffect(() => {
     const map = mapInstance.current;
