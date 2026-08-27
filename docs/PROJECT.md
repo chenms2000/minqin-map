@@ -14,7 +14,7 @@
 
 - 项目：site
 - 最后更新：2026-08-28
-- 维护状态：GitHub Pages 已迁移到 `chenms2000.github.io/minqin-map/` 并完成项目路径发布；Tencent COS 香港 Bucket 与静态网站配置已建立，EdgeOne、自定义域名和首次发布仍待完成；P8 主 surface render-context 仍阻塞
+- 维护状态：GitHub Pages 已迁移到 `chenms2000.github.io/minqin-map/` 并完成项目路径发布，现为唯一发布通道；P8 主 surface render-context 仍阻塞
 
 ## 当前目标
 
@@ -64,8 +64,7 @@
 - P9 以约 3% → 18.28% 森林覆盖率和 380 km 环绿洲锁边林带呈现阶段性恢复，并保留治理仍需持续的事实边界。
 - 发布架构已从 Cloudflare Worker/D1 模板切换为 Vinext `output: "export"`：运行时只需 `dist/client` 中的 HTML、JS、CSS、PMTiles、图片和视频，不再需要服务器、数据库或 Cloudflare 账号。
 - GitHub Pages 使用普通项目仓库 `minqin-map`，发布地址为 `https://chenms2000.github.io/minqin-map/`；Pages workflow 保持应用路由为 `/`，并以路径型 `assetPrefix` 与 `publicAsset` 分别为构建资源、媒体和 PMTiles 加上 `/minqin-map` 前缀。Vinext 会按该前缀把 `_next` 写入嵌套目录，workflow 在上传前将物理 `_next` 目录提升到 artifact 根目录，避免 GitHub Pages 再次叠加项目路径。
-- P11A 的 Tencent COS workflow 继续仅由 `workflow_dispatch` 手动触发，使用 Node 22 构建同一 `dist/client`，显式以 Repository Variable `SITE_URL` 覆盖正式自定义域名，并通过腾讯官方 COSCLI 同步到香港 Bucket；COS 构建不启用 Pages base path，仍运行于域名根路径 `/`。
-- 第二通道采用香港 COS 与 EdgeOne“全球可用区（不含中国大陆）”，不依赖中国大陆 CDN 节点；未来若启用中国大陆境内加速仍需 ICP 备案。`.pmtiles` 的 Range/206 与分片回源是正式发布 Gate，控制台步骤见 `docs/DEPLOY_TENCENT_COS.md`。
+- 付费的 Tencent COS / EdgeOne Pilot 已停止：专用 workflow 与部署说明已删除，GitHub Pages 项目站点是当前唯一发布通道。
 - Surface 在基础矢量图 `mapReady` 后按 HTTP Range 渐进加载，实测 `bytes=0-511` 返回 206；surface 与 terrain 各自独立失败，均不触发基础 fallback。自由 / Story / Tour 复用同一 raster layer 并逐级减弱。
 - Vector landcover / landuse 已改为半透明分类罩色，hillshade 保持弱地貌，水脉关系线降权；“民勤县”DOM 标签去除胶囊背景并改为中英制图文字。
 
@@ -82,14 +81,13 @@
 - 10m focus 已改为本地 PNG-alpha PMTiles（24 tiles / 1,883,514 bytes），裁切外透明并以 320m 短边 feather 混合 30m base；`?focus=missing` 仍独立降级。
 - P8 尚未完成：同日相邻 Sentinel COG 在扩大 surface context 的 Range 读取中持续失败，真实覆盖 Gate 分别只达到 99.8623% / 94.8935%；脚本拒绝纯色填边，现有 30m surface 资产未被覆盖，因此“所有正常视角无 surface 裁切线”尚未通过。
 - P9 代码与资料链已完成；桌面、手机、历史节点镜头、退出恢复与原五章导览时长按用户清单留给人工验收。
-- P11A 代码侧、香港 Bucket 创建和静态网站配置已完成；EdgeOne、自定义域名、HTTPS、GitHub Secrets / Variables 与首次手动 workflow 尚未完成，也尚未宣称云端部署成功。
 
 ## 下一步
 
 - 重新获取失败的 2026-08-06 相邻 Sentinel-2 COG 场景，或采用同许可公共分发镜像；只有 render context 达到完整真实覆盖后才重建 30m surface、复验倾斜/bearing/fullscreen 并关闭 P8。
 - 白刺果名称已经确认，相关现场记录已统一使用确认名称。
 - 后续采访素材补齐授权范围、日期与转录记录。
-- 人工检查 GitHub Pages 项目站点的桌面/手机地图与媒体；随后按 `docs/DEPLOY_TENCENT_COS.md` 配置 EdgeOne、自定义域名和首次手动发布 Gate。
+- 人工检查 GitHub Pages 项目站点的桌面/手机地图与媒体。
 
 ## 已知风险
 
@@ -104,7 +102,7 @@
 - 构建命令：`npm run build`
 - 测试命令：`npm test`
 - 当前结构测试：23 项（包含导览时长、overview/detail 镜头、marker label、drawer pointer、focus PNG-alpha/provenance、增强独立失败、单 MapLibre、无在线运行时底图与无 3D terrain）
-- 部署方式：Vinext 静态导出 `dist/client`；GitHub Pages 项目站点 `/minqin-map/` 为自动发布/回退通道，Tencent COS 香港 + EdgeOne 为根路径构建、手动触发的第二发布通道 Pilot
+- 部署方式：Vinext 静态导出 `dist/client`；GitHub Pages 项目站点 `/minqin-map/` 是唯一发布通道
 
 
 ## 下一步
@@ -136,7 +134,7 @@
 - [x] P7：接入真实 Sentinel-2 地表 raster，以 Range 驱动的 PMTiles 与矢量/弱 hillshade 融合，并完成独立失效降级
 - [x] P9：在原 water/time-machine 与唯一 MapLibre 中增加“绿洲生死线”水沙历史叙事
 - [x] 将站点静态化并加入 GitHub Pages 自动发布流程，移除 Worker、D1 与 ChatGPT 托管运行时依赖
-- [x] P11A：增加隔离的 Tencent COS 香港手动发布 workflow 与 EdgeOne 控制台维护说明，保留 GitHub Pages
+- [x] 停止 P11A 付费部署 Pilot，删除 Tencent COS / EdgeOne 发布通道并保留 GitHub Pages
 
 ## 后续
 
