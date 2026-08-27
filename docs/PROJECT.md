@@ -14,7 +14,7 @@
 
 - 项目：site
 - 最后更新：2026-08-28
-- 维护状态：GitHub Pages 正从账户根站点迁移到 `chenms2000.github.io/minqin-map/`；Tencent COS 香港 Bucket 与静态网站配置已建立，EdgeOne、自定义域名和首次发布仍待完成；P8 主 surface render-context 仍阻塞
+- 维护状态：GitHub Pages 已迁移到 `chenms2000.github.io/minqin-map/` 并完成项目路径发布；Tencent COS 香港 Bucket 与静态网站配置已建立，EdgeOne、自定义域名和首次发布仍待完成；P8 主 surface render-context 仍阻塞
 
 ## 当前目标
 
@@ -89,7 +89,7 @@
 - 重新获取失败的 2026-08-06 相邻 Sentinel-2 COG 场景，或采用同许可公共分发镜像；只有 render context 达到完整真实覆盖后才重建 30m surface、复验倾斜/bearing/fullscreen 并关闭 P8。
 - 白刺果名称已经确认，相关现场记录已统一使用确认名称。
 - 后续采访素材补齐授权范围、日期与转录记录。
-- 完成 GitHub 仓库重命名、Pages 项目路径构建与线上检查；随后按 `docs/DEPLOY_TENCENT_COS.md` 配置 EdgeOne、自定义域名和首次手动发布 Gate。
+- 人工检查 GitHub Pages 项目站点的桌面/手机地图与媒体；随后按 `docs/DEPLOY_TENCENT_COS.md` 配置 EdgeOne、自定义域名和首次手动发布 Gate。
 
 ## 已知风险
 
