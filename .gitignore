@@ -65,6 +65,7 @@ __pycache__/
 *.py[cod]
 /.venv/
 /venv/
+/.surface-venv/
 
 # debug
 npm-debug.log*
@@ -74,7 +75,19 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
+!.env.sample
+!.env.template
+!.env.*.example
+!.env.*.sample
+!.env.*.template
 .dev.vars*
+!.dev.vars.example
+!.dev.vars.sample
+!.dev.vars.template
+!.dev.vars.*.example
+!.dev.vars.*.sample
+!.dev.vars.*.template
 .npmrc
 
 # vercel
