@@ -14,7 +14,7 @@
 
 - 项目：site
 - 最后更新：2026-08-27
-- 维护状态：站点已完成 GitHub Pages 纯静态导出改造；P9 “绿洲生死线”保留，P8 主 surface render-context 仍阻塞
+- 维护状态：GitHub Pages 已上线并保留为回退版本；P11A 已加入 Tencent COS 香港 + EdgeOne 第二发布通道 Pilot，云端配置与人工 Gate 待完成；P8 主 surface render-context 仍阻塞
 
 ## 当前目标
 
@@ -64,6 +64,8 @@
 - P9 以约 3% → 18.28% 森林覆盖率和 380 km 环绿洲锁边林带呈现阶段性恢复，并保留治理仍需持续的事实边界。
 - 发布架构已从 Cloudflare Worker/D1 模板切换为 Vinext `output: "export"`：运行时只需 `dist/client` 中的 HTML、JS、CSS、PMTiles、图片和视频，不再需要服务器、数据库或 Cloudflare 账号。
 - GitHub Actions 已配置为推送 `main` 后自动发布 GitHub Pages。为避免 Vinext 当前版本在项目子路径静态导出时的 RSC/basePath 问题，仓库必须使用 `<GitHub用户名>.github.io` 根站点命名；地图和媒体继续使用站点根路径。
+- P11A 新增独立的 Tencent COS workflow：仅 `workflow_dispatch` 手动触发，使用 Node 22 构建同一 `dist/client`，显式以 Repository Variable `SITE_URL` 覆盖正式自定义域名，并通过腾讯官方 COSCLI 同步到香港 Bucket；GitHub Pages workflow 未修改。
+- 第二通道采用香港 COS 与 EdgeOne“全球可用区（不含中国大陆）”，不依赖中国大陆 CDN 节点；未来若启用中国大陆境内加速仍需 ICP 备案。`.pmtiles` 的 Range/206 与分片回源是正式发布 Gate，控制台步骤见 `docs/DEPLOY_TENCENT_COS.md`。
 - Surface 在基础矢量图 `mapReady` 后按 HTTP Range 渐进加载，实测 `bytes=0-511` 返回 206；surface 与 terrain 各自独立失败，均不触发基础 fallback。自由 / Story / Tour 复用同一 raster layer 并逐级减弱。
 - Vector landcover / landuse 已改为半透明分类罩色，hillshade 保持弱地貌，水脉关系线降权；“民勤县”DOM 标签去除胶囊背景并改为中英制图文字。
 
@@ -80,19 +82,20 @@
 - 10m focus 已改为本地 PNG-alpha PMTiles（24 tiles / 1,883,514 bytes），裁切外透明并以 320m 短边 feather 混合 30m base；`?focus=missing` 仍独立降级。
 - P8 尚未完成：同日相邻 Sentinel COG 在扩大 surface context 的 Range 读取中持续失败，真实覆盖 Gate 分别只达到 99.8623% / 94.8935%；脚本拒绝纯色填边，现有 30m surface 资产未被覆盖，因此“所有正常视角无 surface 裁切线”尚未通过。
 - P9 代码与资料链已完成；桌面、手机、历史节点镜头、退出恢复与原五章导览时长按用户清单留给人工验收。
+- P11A 代码侧已完成；腾讯云账号、香港 Bucket、EdgeOne、自定义域名、HTTPS 与首次手动 workflow 均由用户后续配置，尚未宣称云端部署成功。
 
 ## 下一步
 
 - 重新获取失败的 2026-08-06 相邻 Sentinel-2 COG 场景，或采用同许可公共分发镜像；只有 render context 达到完整真实覆盖后才重建 30m surface、复验倾斜/bearing/fullscreen 并关闭 P8。
 - 白刺果名称已经确认，相关现场记录已统一使用确认名称。
 - 后续采访素材补齐授权范围、日期与转录记录。
-- 由用户决定是否提交、push、部署或发起系统 Fullscreen API 的人工回归。
+- 由用户决定何时提交、push P11A；随后按 `docs/DEPLOY_TENCENT_COS.md` 完成腾讯云配置和首次手动发布 Gate。
 
 ## 已知风险
 
 - P8 主 surface 外围扩展仍被真实数据读取阻塞；脚本保持 fail-closed，未用纯米色、拉伸或 AI 纹理填补缺口。当前 P7 30m surface 仍为旧的 0.05° buffer，整体边界 seam Gate 未关闭；本轮只关闭了 10m focus overlay 的矩形硬边。
 - `public/` 中新增约 17.9 MiB terrain 与 20.4 MiB surface PMTiles；单文件仍低于常见 Git 托管限制。Surface 使用 Range 按需读取，terrain 仍沿用 P6 整包增强加载。
-- 本轮改动未 commit、push 或 deploy；受保护的 `docs/CONTEXT_POLICY.md` 与 `docs/HANDOFF.md` 保持未跟踪且未修改。
+- P11A 改动未 commit、push 或部署；受保护的 `docs/CONTEXT_POLICY.md` 与 `docs/HANDOFF.md` 以及既有 `package-lock.json` 工作树状态保持未修改、未纳入。
 - GPS 采样线来自影像元数据，只反映部分拍摄点；不得解释为完整路线、基地边界或导航坐标。
 - 白刺果名称已确认；直播展示农产品已确认为哈密瓜。
 
@@ -101,7 +104,7 @@
 - 构建命令：`npm run build`
 - 测试命令：`npm test`
 - 当前结构测试：23 项（包含导览时长、overview/detail 镜头、marker label、drawer pointer、focus PNG-alpha/provenance、增强独立失败、单 MapLibre、无在线运行时底图与无 3D terrain）
-- 部署方式：OpenAI Sites / Cloudflare（由 `.openai/hosting.json` 与 Vite 配置驱动）
+- 部署方式：Vinext 静态导出 `dist/client`；GitHub Pages 为现有自动发布/回退通道，Tencent COS 香港 + EdgeOne 为手动触发的第二发布通道 Pilot
 
 
 ## 下一步
@@ -133,6 +136,7 @@
 - [x] P7：接入真实 Sentinel-2 地表 raster，以 Range 驱动的 PMTiles 与矢量/弱 hillshade 融合，并完成独立失效降级
 - [x] P9：在原 water/time-machine 与唯一 MapLibre 中增加“绿洲生死线”水沙历史叙事
 - [x] 将站点静态化并加入 GitHub Pages 自动发布流程，移除 Worker、D1 与 ChatGPT 托管运行时依赖
+- [x] P11A：增加隔离的 Tencent COS 香港手动发布 workflow 与 EdgeOne 控制台维护说明，保留 GitHub Pages
 
 ## 后续
 
