@@ -1,6 +1,7 @@
 import type { MediaAsset } from "./types";
+import { publicAsset } from "./public-assets";
 
-export const media: MediaAsset[] = [
+const mediaCatalog: MediaAsset[] = [
   { id: "journey-sky", type: "image", src: "/media/2026-08-03/journey-sky.webp", alt: "列车窗外的田野、山地与云层", caption: "向河西走廊行进，地貌从农田渐入旱区。", capturedAt: "2026-08-03 12:52", featured: true },
   { id: "journey-village", type: "image", src: "/media/2026-08-03/journey-village.webp", alt: "列车窗外的河西村落与山地", caption: "窗外的聚落与山地，构成进入河西的第一重空间印象。", capturedAt: "2026-08-03 13:12", featured: false },
   { id: "road-video", type: "video", src: "/media/2026-08-03/road-to-minqin.mp4", poster: "/media/2026-08-03/journey-village.webp", alt: "驶向民勤的公路影像", caption: "从武威方向驶向民勤，绿带、农田与荒漠依次出现。", capturedAt: "2026-08-03 15:02", featured: true, durationSeconds: 4.114 },
@@ -45,3 +46,9 @@ export const media: MediaAsset[] = [
   { id: "forest-technical-board", type: "image", src: "/media/2026-08-04/forest-technical-board.webp", alt: "基地内民勤县公益治沙造林技术规程展板", caption: "现场技术展板呈现公益治沙造林的规范化要求，作为基地环境记录展示。", capturedAt: "2026-08-04 16:22", featured: false },
   { id: "sunset-flags-base", type: "image", src: "/media/2026-08-04/sunset-flags-base.webp", alt: "夕阳下的沙丘、公益旗帜与基地设施", caption: "夕阳把两日实践收束到基地环境：一次活动结束，长期维护仍在继续。", capturedAt: "2026-08-04 19:31", featured: true },
 ];
+
+export const media: MediaAsset[] = mediaCatalog.map((asset) => ({
+  ...asset,
+  src: publicAsset(asset.src),
+  poster: asset.poster ? publicAsset(asset.poster) : undefined,
+}));

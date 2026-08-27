@@ -1,7 +1,7 @@
 # 项目总览
 
 - 项目：site
-- 更新：2026-08-13
+- 更新：2026-08-27
 - 来源：由旧档案迁移，旧文件已保留
 
 ## 当前目标
@@ -13,8 +13,8 @@
 # 项目状态
 
 - 项目：site
-- 最后更新：2026-08-13
-- 维护状态：P8 导览与局部地图细节优化已完成代码与自动验证；主 surface render-context 仍阻塞
+- 最后更新：2026-08-27
+- 维护状态：站点已完成 GitHub Pages 纯静态导出改造；P9 “绿洲生死线”保留，P8 主 surface render-context 仍阻塞
 
 ## 当前目标
 
@@ -59,6 +59,11 @@
 - 已完成 P7 真实地表融合：采用 Element 84 / AWS Open Data 的 Sentinel-2 Collection 1 L2A，选取 2026-08-06、覆盖民勤的 4 个低云场景，以官方 B04/B03/B02 TCI 为自然色来源，生成覆盖 `[102.40, 37.75, 103.80, 39.40]` 的 30m 视觉级本地 raster PMTiles。
 - Surface archive 为 z7–13、2212 个 JPEG 瓦片、21,406,499 bytes；provenance 记录 provider、dataset、许可与再分发声明、获取/场景日期、云量、波段、分辨率、范围、处理链、场景资产和 SHA-256。
 - P7A 固定默认视角 Before/After 一次通过视觉 Gate：After 可直接辨认农田格网、绿洲边缘、裸地与聚落周边结构，不再是单纯浅色几何面；随后才扩展到完整 `mapBounds`。
+- P9 将 `waterStages` 扩展为地理、1951、1959、2007、2010 与 2023—25 六个可追溯切片，明确区分 1950 全民动员与 1951 防沙林场。
+- P9 继续复用原 water/time-machine 与唯一 MapLibre；只在历史工具开启时显示巴丹吉林沙漠南缘、民勤绿洲和腾格里沙漠西缘的区域示意，并明示“非历史沙漠边界”；退出后移除 overlay 并恢复进入前自由地图镜头。
+- P9 以约 3% → 18.28% 森林覆盖率和 380 km 环绿洲锁边林带呈现阶段性恢复，并保留治理仍需持续的事实边界。
+- 发布架构已从 Cloudflare Worker/D1 模板切换为 Vinext `output: "export"`：运行时只需 `dist/client` 中的 HTML、JS、CSS、PMTiles、图片和视频，不再需要服务器、数据库或 Cloudflare 账号。
+- GitHub Actions 已配置为推送 `main` 后自动发布 GitHub Pages。为避免 Vinext 当前版本在项目子路径静态导出时的 RSC/basePath 问题，仓库必须使用 `<GitHub用户名>.github.io` 根站点命名；地图和媒体继续使用站点根路径。
 - Surface 在基础矢量图 `mapReady` 后按 HTTP Range 渐进加载，实测 `bytes=0-511` 返回 206；surface 与 terrain 各自独立失败，均不触发基础 fallback。自由 / Story / Tour 复用同一 raster layer 并逐级减弱。
 - Vector landcover / landuse 已改为半透明分类罩色，hillshade 保持弱地貌，水脉关系线降权；“民勤县”DOM 标签去除胶囊背景并改为中英制图文字。
 
@@ -74,6 +79,7 @@
 - Marker 名称直接派生自 `point.title` 并置于原有 44px button 内；drawer 打开态恢复完整 pointer events，A→B→C 连续换点与滚轮滚动实测通过。
 - 10m focus 已改为本地 PNG-alpha PMTiles（24 tiles / 1,883,514 bytes），裁切外透明并以 320m 短边 feather 混合 30m base；`?focus=missing` 仍独立降级。
 - P8 尚未完成：同日相邻 Sentinel COG 在扩大 surface context 的 Range 读取中持续失败，真实覆盖 Gate 分别只达到 99.8623% / 94.8935%；脚本拒绝纯色填边，现有 30m surface 资产未被覆盖，因此“所有正常视角无 surface 裁切线”尚未通过。
+- P9 代码与资料链已完成；桌面、手机、历史节点镜头、退出恢复与原五章导览时长按用户清单留给人工验收。
 
 ## 下一步
 
@@ -125,6 +131,8 @@
 - [x] 完成数字地图第二轮制图质感精修、selected marker、语境标签缩放治理与多模式浏览器验收
 - [x] P6：接入真实本地 DEM、轻量 hillshade、三模式强度与 terrain 失败独立降级
 - [x] P7：接入真实 Sentinel-2 地表 raster，以 Range 驱动的 PMTiles 与矢量/弱 hillshade 融合，并完成独立失效降级
+- [x] P9：在原 water/time-machine 与唯一 MapLibre 中增加“绿洲生死线”水沙历史叙事
+- [x] 将站点静态化并加入 GitHub Pages 自动发布流程，移除 Worker、D1 与 ChatGPT 托管运行时依赖
 
 ## 后续
 

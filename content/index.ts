@@ -1,4 +1,5 @@
 export * from "./types";
+export { publicAsset, siteBasePath } from "./public-assets";
 export { sources } from "./sources";
 export { media } from "./media";
 export { storyPoints } from "./story-points";

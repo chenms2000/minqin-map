@@ -8,7 +8,7 @@ import type { ExhibitModule } from "@/app/components/exhibit/digital-exhibit";
 const moduleMeta: Array<{ id: ExhibitModule; label: string; en: string }> = [
   { id: "tour", label: "五章导览", en: "GUIDED STORY" },
   { id: "field", label: "实践轨迹", en: "FIELD PLAYER" },
-  { id: "water", label: "水脉时间机", en: "WATER TIME" },
+  { id: "water", label: "绿洲生死线", en: "WATER × SAND" },
   { id: "resources", label: "药材标本柜", en: "SPECIMEN CABINET" },
 ];
 

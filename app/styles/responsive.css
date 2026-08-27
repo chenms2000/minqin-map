@@ -156,6 +156,9 @@
   .point-list > div { max-height: 178px; }
   .point-list button:not(:first-child) { display: grid; }
   .map-legend + .point-list { top: 50px; }
+  .map-history-region { width: 108px; min-height: 52px; padding: 7px 9px; font-size: 9px; }
+  .map-history-region.oasis { width: 88px; min-height: 48px; font-size: 10px; }
+  .map-history-boundary-note { top: 44px; max-width: calc(100% - 32px); overflow: hidden; text-overflow: ellipsis; }
   .field-media { padding: 78px 20px; }
   .media-heading { display: block; margin: 28px 0 44px; }
   .media-heading h2 { font-size: 43px; }
@@ -196,7 +199,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .map-loading i { transition: none; }
-  .water-pulse { transition: none; }
+  .water-visual::after, .water-visual .oasis-core i, .map-history-region { transition: none; }
 }
 
 /* Museum-documentary responsive acceptance */
@@ -267,8 +270,14 @@
   .timeline-days, .timeline-filters, .water-years, .resource-view-switch, .resource-sections { padding-inline: 20px; }
   .player-media { height: 22vh; margin-inline: 20px; }
   .event-readout, .timeline-range, .event-strip { padding-inline: 20px; }
-  .water-visual { height: 86px; margin-inline: 20px; }
+  .water-visual { height: 100px; margin-inline: 20px; }
   .water-readout, .specimen-tabs, .specimen-sheet { margin-inline: 20px; }
+  .water-visual .sand-side, .water-visual .oasis-core { padding-inline: 5px; }
+  .water-visual .sand-side b { font-size: 9px; }
+  .water-visual .oasis-core b { font-size: 12px; }
+  .water-visual .oasis-core span { font-size: 6px; }
+  .water-comparison > div { min-height: 52px; padding: 6px; }
+  .water-comparison strong { font-size: 13px; }
   .specimen-intro { grid-template-columns: 150px minmax(0,1fr); gap: 14px; }
   .specimen-portrait img { height: 170px; }
   .relation-view { padding-inline: 20px; }

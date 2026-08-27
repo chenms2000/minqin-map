@@ -6,6 +6,8 @@ export const metadata: Metadata = {
   description: "沿着实践足迹、绿洲水脉、药材产业与人物故事，读懂民勤在沙与水之间守护绿洲的长期行动。",
 };
 
+export const dynamic = "force-static";
+
 export default function Home() {
   return <Experience />;
 }

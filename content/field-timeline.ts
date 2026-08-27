@@ -2,7 +2,7 @@ import type { TimelineCategory, TimelineEvent } from "./types";
 
 export const timelineCategories: TimelineCategory[] = ["旅途", "观察", "科普", "传播", "劳动", "团队记录"];
 
-export const timelineEvents: TimelineEvent[] = [
+const timelineEventCatalog: TimelineEvent[] = [
   { id: "event-journey-sky", capturedAt: "2026-08-03 12:52", day: "2026-08-03", category: "旅途", storyPointId: "arrival-minqin", mediaId: "journey-sky", locationAccuracy: "县域叙事点", note: "从农田与山地进入河西旱区的第一重观察。" },
   { id: "event-journey-village", capturedAt: "2026-08-03 13:12", day: "2026-08-03", category: "旅途", storyPointId: "arrival-minqin", mediaId: "journey-village", locationAccuracy: "县域叙事点", note: "记录沿途聚落、道路与地貌变化。" },
   { id: "event-road-video", capturedAt: "2026-08-03 15:02", day: "2026-08-03", category: "旅途", storyPointId: "arrival-minqin", mediaId: "road-video", locationAccuracy: "县域叙事点", note: "从武威方向驶向民勤的公路影像。" },
@@ -46,7 +46,9 @@ export const timelineEvents: TimelineEvent[] = [
   { id: "event-volunteer-sign-field", capturedAt: "2026-08-04 10:37", day: "2026-08-04", category: "团队记录", storyPointId: "base-activity-center", mediaId: "volunteer-sign-field", locationAccuracy: "GPS实拍点", note: "记录基地内成片的志愿者标牌。" },
   { id: "event-forest-technical-board", capturedAt: "2026-08-04 16:22", day: "2026-08-04", category: "团队记录", storyPointId: "base-activity-center", mediaId: "forest-technical-board", locationAccuracy: "GPS实拍点", note: "记录基地公益治沙造林技术规程展板。" },
   { id: "event-sunset-flags-base", capturedAt: "2026-08-04 19:31", day: "2026-08-04", category: "团队记录", storyPointId: "base-activity-center", mediaId: "sunset-flags-base", locationAccuracy: "GPS实拍点", note: "夕阳下记录基地、沙丘与公益旗帜。" },
-].sort((a, b) => {
+];
+
+export const timelineEvents = timelineEventCatalog.sort((a, b) => {
   const aKey = a.capturedAt.length === 10 ? `${a.capturedAt} 23:59:59` : a.capturedAt;
   const bKey = b.capturedAt.length === 10 ? `${b.capturedAt} 23:59:59` : b.capturedAt;
   return aKey.localeCompare(bKey);

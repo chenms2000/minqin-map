@@ -10,7 +10,7 @@ import { defaultView } from "@/app/lib/map-config";
 
 const exhibitModules: ExhibitModule[] = ["tour", "field", "water", "resources"];
 const mapToolPortals = [
-  { id: "water-machine", label: "水脉时间机", module: "water", pointId: "shiyang-system" },
+  { id: "water-machine", label: "绿洲生死线", module: "water", pointId: "shiyang-system" },
   { id: "herb-cabinet", label: "药材标本柜", module: "resources", pointId: "planned-herbs" },
 ] as const satisfies readonly MapToolPortal[];
 export type TourPlaybackState = "idle" | "playing" | "paused" | "completed";
@@ -73,6 +73,7 @@ export function Experience() {
   const chapterElapsedRef = useRef(0);
   const drawerWasOpen = useRef(false);
   const lastTourCameraKeyRef = useRef<string | null>(null);
+  const mapToolReturnView = useRef<{ center: [number, number]; zoom: number; pitch: number; bearing: number } | null>(null);
 
   const layerPoints = useMemo(() => storyPoints.filter((point) => point.layer === activeLayer), [activeLayer]);
   const selected = storyPointById.get(selectedId ?? "") ?? null;
@@ -96,6 +97,7 @@ export function Experience() {
   const waterStage = waterStages[waterStageIndex];
   const selectedResourcePoint = storyPointById.get(herbs[resourceIndex].mapPointId);
   const mapPresentationMode = tourMode ? "tour" : storyMapMode ? "story" : "free";
+  const historyStage = tourMode && exhibitModule === "water" ? waterStage : null;
   const mapSelectedPointId = !tourMode
     ? selectedId
     : exhibitModule === "tour"
@@ -106,7 +108,7 @@ export function Experience() {
           ? waterStage.pointId
           : selectedResourcePoint?.id ?? null;
 
-  const { mapContainer, mapInstance, mapFallback, mapReady, mapProgress } = useMinqinMap({ activeLayer, activePoints, mapSelectedPointId, presentationMode: mapPresentationMode, toolPortals: mapToolPortals, onPointActivate: activateMapPoint, onToolActivate: openMapTool });
+  const { mapContainer, mapInstance, mapFallback, mapReady, mapProgress } = useMinqinMap({ activeLayer, activePoints, mapSelectedPointId, presentationMode: mapPresentationMode, historyStage, toolPortals: mapToolPortals, onPointActivate: activateMapPoint, onToolActivate: openMapTool });
 
   useEffect(() => {
     if (!tourMode || exhibitModule !== "tour" || tourPlayback !== "playing") return;
@@ -278,10 +280,13 @@ export function Experience() {
   }
 
   function endTour() {
+    const returnView = mapToolReturnView.current;
+    mapToolReturnView.current = null;
     lastTourCameraKeyRef.current = null;
     setStoryIndex(tourIndex); resetChapterProgress(); setTourPlayback("idle"); setTourMode(false); updateExhibitUrl(null, tourIndex);
     window.setTimeout(() => {
       mapInstance.current?.resize();
+      if (returnView) mapInstance.current?.easeTo({ ...returnView, duration: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 700 });
       const focusTarget = previousFocus.current?.isConnected ? previousFocus.current : mapSection.current;
       focusTarget?.focus();
     }, 90);
@@ -289,6 +294,11 @@ export function Experience() {
 
   function openMapTool(module: MapToolPortal["module"]) {
     previousFocus.current = mapSection.current;
+    const map = mapInstance.current;
+    if (map) {
+      const center = map.getCenter();
+      mapToolReturnView.current = { center: [center.lng, center.lat], zoom: map.getZoom(), pitch: map.getPitch(), bearing: map.getBearing() };
+    }
     lastTourCameraKeyRef.current = null;
     resetChapterProgress();
     setTourPlayback("idle");

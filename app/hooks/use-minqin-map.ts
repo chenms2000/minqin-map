@@ -3,15 +3,16 @@
 import { useEffect, useRef, useState } from "react";
 import { AttributionControl, Map as MapLibreMap, Marker, NavigationControl, Popup, ScaleControl, addProtocol, removeProtocol } from "maplibre-gl";
 import { FileSource, PMTiles, Protocol, TileType } from "pmtiles";
-import { fieldTracks, storyPointById, type StoryLayer, type StoryPoint } from "@/content";
+import { fieldTracks, publicAsset, storyPointById, type StoryLayer, type StoryPoint, type WaterStage } from "@/content";
 import { accuracyClass } from "@/app/lib/formatters";
-import { cartographicPalette, cartographicTuning, contextLabels, defaultView, hillshadeInsertionBeforeId, localArchiveName, localArchivePath, localMapStyle, localSurfaceArchivePath, localSurfaceFocusArchivePath, localTerrainArchiveName, localTerrainArchivePath, mapBounds, practiceRoute, surfaceAttribution, surfaceFocusAttribution, surfaceFocusLayerId, surfaceFocusRasterPaint, surfaceFocusSourceId, surfaceInsertionBeforeId, surfaceLayerId, surfaceRasterPaint, surfaceSourceId, terrainAttribution, terrainHillshadeLayerId, terrainHillshadePaint, terrainSourceId, waterRoute, zoomExpression, type MapPresentationMode } from "@/app/lib/map-config";
+import { cartographicPalette, cartographicTuning, contextLabels, defaultView, hillshadeInsertionBeforeId, historyContextLabels, localArchiveName, localArchivePath, localMapStyle, localSurfaceArchivePath, localSurfaceFocusArchivePath, localTerrainArchiveName, localTerrainArchivePath, mapBounds, practiceRoute, surfaceAttribution, surfaceFocusAttribution, surfaceFocusLayerId, surfaceFocusRasterPaint, surfaceFocusSourceId, surfaceInsertionBeforeId, surfaceLayerId, surfaceRasterPaint, surfaceSourceId, terrainAttribution, terrainHillshadeLayerId, terrainHillshadePaint, terrainSourceId, waterRoute, zoomExpression, type MapPresentationMode } from "@/app/lib/map-config";
 
 type UseMinqinMapOptions = {
   activeLayer: StoryLayer;
   activePoints: StoryPoint[];
   mapSelectedPointId: string | null;
   presentationMode: MapPresentationMode;
+  historyStage: WaterStage | null;
   toolPortals: readonly MapToolPortal[];
   onPointActivate: (pointId: string) => void;
   onToolActivate: (module: MapToolPortal["module"]) => void;
@@ -26,10 +27,12 @@ export type MapToolPortal = {
 
 type PointMarkerEntry = { marker: Marker; element: HTMLButtonElement };
 
-export function useMinqinMap({ activeLayer, activePoints, mapSelectedPointId, presentationMode, toolPortals, onPointActivate, onToolActivate }: UseMinqinMapOptions) {
+export function useMinqinMap({ activeLayer, activePoints, mapSelectedPointId, presentationMode, historyStage, toolPortals, onPointActivate, onToolActivate }: UseMinqinMapOptions) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<MapLibreMap | null>(null);
   const contextMarkers = useRef<Marker[]>([]);
+  const historyMarkers = useRef<Marker[]>([]);
+  const historyNotice = useRef<HTMLDivElement | null>(null);
   const pointMarkers = useRef<Map<string, PointMarkerEntry>>(new Map());
   const toolMarkers = useRef<Map<string, Marker>>(new Map());
   const activationRef = useRef(onPointActivate);
@@ -84,8 +87,8 @@ export function useMinqinMap({ activeLayer, activePoints, mapSelectedPointId, pr
   }, [mapReady]);
 
   useEffect(() => {
-    const container = mapContainer.current;
-    if (!container || mapInstance.current) return;
+    if (!mapContainer.current || mapInstance.current) return;
+    const container: HTMLDivElement = mapContainer.current;
     const pointMarkerRegistry = pointMarkers.current;
     const toolMarkerRegistry = toolMarkers.current;
     const protocol = new Protocol();
@@ -100,7 +103,7 @@ export function useMinqinMap({ activeLayer, activePoints, mapSelectedPointId, pr
       container.dataset.surfaceState = "loading";
       try {
         const surfacePath = new URLSearchParams(window.location.search).get("surface") === "missing"
-          ? "/maps/__missing-minqin-surface.pmtiles"
+          ? publicAsset("/maps/__missing-minqin-surface.pmtiles")
           : localSurfaceArchivePath;
         const surfaceUrl = new URL(surfacePath, window.location.href).href;
         const surfaceArchive = new PMTiles(surfaceUrl);
@@ -134,7 +137,7 @@ export function useMinqinMap({ activeLayer, activePoints, mapSelectedPointId, pr
       container.dataset.terrainState = "loading";
       try {
         const terrainPath = new URLSearchParams(window.location.search).get("terrain") === "missing"
-          ? "/maps/__missing-minqin-terrain.pmtiles"
+          ? publicAsset("/maps/__missing-minqin-terrain.pmtiles")
           : localTerrainArchivePath;
         const response = await fetch(terrainPath, { cache: "force-cache", signal: abortController.signal });
         if (!response.ok) throw new Error(`Terrain PMTiles request failed: ${response.status}`);
@@ -173,7 +176,7 @@ export function useMinqinMap({ activeLayer, activePoints, mapSelectedPointId, pr
       container.dataset.focusState = "loading";
       try {
         const focusPath = new URLSearchParams(window.location.search).get("focus") === "missing"
-          ? "/maps/__missing-minqin-surface-focus.pmtiles"
+          ? publicAsset("/maps/__missing-minqin-surface-focus.pmtiles")
           : localSurfaceFocusArchivePath;
         const focusUrl = new URL(focusPath, window.location.href).href;
         const focusArchive = new PMTiles(focusUrl);
@@ -292,6 +295,10 @@ export function useMinqinMap({ activeLayer, activePoints, mapSelectedPointId, pr
       window.clearTimeout(fallbackTimer);
       contextMarkers.current.forEach((marker) => marker.remove());
       contextMarkers.current = [];
+      historyMarkers.current.forEach((marker) => marker.remove());
+      historyMarkers.current = [];
+      historyNotice.current?.remove();
+      historyNotice.current = null;
       pointMarkerRegistry.forEach(({ marker }) => marker.remove());
       pointMarkerRegistry.clear();
       toolMarkerRegistry.forEach((marker) => marker.remove());
@@ -344,6 +351,41 @@ export function useMinqinMap({ activeLayer, activePoints, mapSelectedPointId, pr
 
   useEffect(() => {
     const map = mapInstance.current;
+    const container = mapContainer.current;
+    if (!map || !container) return;
+    historyMarkers.current.forEach((marker) => marker.remove());
+    historyMarkers.current = [];
+    historyNotice.current?.remove();
+    historyNotice.current = null;
+    delete container.dataset.historyStage;
+    if (!historyStage) return;
+
+    container.dataset.historyStage = historyStage.phase;
+    historyContextLabels.forEach((label) => {
+      const element = document.createElement("div");
+      element.className = `map-history-region ${label.kind} phase-${historyStage.phase}`;
+      element.textContent = label.name;
+      element.setAttribute("aria-hidden", "true");
+      historyMarkers.current.push(new Marker({ element, anchor: "center" }).setLngLat(label.coordinates).addTo(map));
+    });
+    const notice = document.createElement("div");
+    notice.className = "map-history-boundary-note";
+    notice.textContent = "区域关系示意 · 非历史沙漠边界";
+    notice.setAttribute("aria-hidden", "true");
+    container.append(notice);
+    historyNotice.current = notice;
+
+    return () => {
+      historyMarkers.current.forEach((marker) => marker.remove());
+      historyMarkers.current = [];
+      notice.remove();
+      if (historyNotice.current === notice) historyNotice.current = null;
+      delete container.dataset.historyStage;
+    };
+  }, [historyStage, mapReady]);
+
+  useEffect(() => {
+    const map = mapInstance.current;
     if (!map) return;
     toolMarkers.current.forEach((marker) => marker.remove());
     const markersForMode = new Map<string, Marker>();
@@ -358,7 +400,7 @@ export function useMinqinMap({ activeLayer, activePoints, mapSelectedPointId, pr
         button.setAttribute("aria-label", `打开探索工具：${portal.label}`);
         const eyebrow = document.createElement("span");
         eyebrow.className = "map-tool-portal-kicker";
-        eyebrow.textContent = "探索工具";
+        eyebrow.textContent = portal.module === "water" ? "历史工具" : "探索工具";
         const label = document.createElement("strong");
         label.textContent = portal.label;
         button.append(eyebrow, label);

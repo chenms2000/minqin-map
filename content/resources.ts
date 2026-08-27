@@ -1,4 +1,5 @@
 import type { HerbProfile, RelationshipEdge } from "./types";
+import { publicAsset } from "./public-assets";
 
 export const herbs: HerbProfile[] = [
   {
@@ -12,7 +13,7 @@ export const herbs: HerbProfile[] = [
     sourceIds: ["minqin-herb-harvest-2020", "desert-garden"],
     mapPointId: "desert-botanical-garden",
     image: {
-      src: "/media/resources/licorice.jpg",
+      src: publicAsset("/media/resources/licorice.jpg"),
       alt: "甘草植株与羽状复叶",
       caption: "甘草植株（Glycyrrhiza uralensis）",
       credit: "Daderot · Wikimedia Commons",
@@ -44,7 +45,7 @@ export const herbs: HerbProfile[] = [
     sourceIds: ["minqin-herb-harvest-2020", "cistanche-industry", "desert-food-industry-2024"],
     mapPointId: "cistanche-landscape",
     image: {
-      src: "/media/resources/cistanche.jpg",
+      src: publicAsset("/media/resources/cistanche.jpg"),
       alt: "荒漠中抽生的肉苁蓉花序",
       caption: "肉苁蓉（Cistanche deserticola），摄于新疆鄯善",
       credit: "Anagoria · Wikimedia Commons",
@@ -76,7 +77,7 @@ export const herbs: HerbProfile[] = [
     sourceIds: ["cynomorium-cas", "cynomorium-genetics-2018"],
     mapPointId: "planned-herbs",
     image: {
-      src: "/media/resources/cynomorium.jpg",
+      src: publicAsset("/media/resources/cynomorium.jpg"),
       alt: "荒漠地表抽生的红棕色锁阳花序",
       caption: "锁阳（Cynomorium songaricum），摄于哈萨克斯坦",
       credit: "Alexander Dubynin · Wikimedia Commons",
@@ -108,7 +109,7 @@ export const herbs: HerbProfile[] = [
     sourceIds: ["minqin-herb-harvest-2020"],
     mapPointId: "planned-herbs",
     image: {
-      src: "/media/resources/isatis.jpg",
+      src: publicAsset("/media/resources/isatis.jpg"),
       alt: "开黄色小花的菘蓝植株",
       caption: "菘蓝（Isatis indigotica），其根入药称板蓝根",
       credit: "阿橋 HQ · Wikimedia Commons",

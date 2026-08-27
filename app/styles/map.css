@@ -62,6 +62,15 @@
 .map-context-label.city small { font-size: 6px; font-weight: 700; letter-spacing: .2em; }
 .map-context-label.town { color: #5b4e38; font-size: 8px; font-weight: 600; letter-spacing: .1em; }
 .map-context-label.water { color: #176275; font-size: 9px; font-style: italic; }
+.map-history-region { position: relative; width: 150px; min-height: 64px; display: grid; place-items: center; padding: 10px 16px; color: #5a4528; font-family: var(--serif); font-size: 11px; font-weight: 700; letter-spacing: .08em; line-height: 1.35; text-align: center; text-shadow: 0 1px 0 rgba(255,248,224,.75); pointer-events: none; transition: opacity .25s ease, transform .25s ease; }
+.map-history-region.desert::before { content: ""; position: absolute; z-index: -1; inset: -14px -26px; border: 1px dashed rgba(142,102,50,.22); border-radius: 50%; background: radial-gradient(ellipse, rgba(205,166,98,.28), rgba(205,166,98,.08) 58%, transparent 72%); }
+.map-history-region.oasis { width: 112px; min-height: 58px; color: #143d2a; font-size: 12px; text-shadow: 0 1px 0 rgba(244,238,207,.9); }
+.map-history-region.oasis::before { content: ""; position: absolute; z-index: -1; inset: -10px -18px; border: 1px solid rgba(45,112,73,.28); border-radius: 50%; background: radial-gradient(ellipse, rgba(87,145,95,.34), rgba(87,145,95,.09) 62%, transparent 74%); }
+.map-history-region.phase-crisis.desert { opacity: 1; transform: scale(1.08); }
+.map-history-region.phase-crisis.oasis { opacity: .74; transform: scale(.92); }
+.map-history-region.phase-governance.desert, .map-history-region.phase-return.desert, .map-history-region.phase-recovery.desert { opacity: .64; }
+.map-history-region.phase-return.oasis, .map-history-region.phase-recovery.oasis { transform: scale(1.08); }
+.map-history-boundary-note { position: absolute; z-index: 6; top: 12px; left: 50%; padding: 6px 9px; border: 1px solid rgba(93,72,40,.22); border-radius: 2px; color: rgba(49,42,29,.72); background: rgba(248,239,210,.78); backdrop-filter: blur(6px); font-size: 8px; font-weight: 650; letter-spacing: .08em; transform: translateX(-50%); pointer-events: none; white-space: nowrap; }
 .maplibregl-marker { color: #fff; }
 .maplibregl-ctrl-group { overflow: hidden; border: 1px solid rgba(255,255,255,.16) !important; border-radius: 3px !important; background: rgba(20,37,29,.78) !important; box-shadow: 0 3px 14px rgba(8,20,13,.18) !important; backdrop-filter: blur(8px); }
 .maplibregl-ctrl-group button { width: 34px !important; height: 34px !important; border-color: rgba(255,255,255,.12) !important; }

@@ -30,3 +30,5 @@
 | 2026-08-13 | Tour 使用 overview → detail 镜头语义，并让桌面内容栏大于地图栏 | 章节开场先建立空间关系，进入 point/media/source 后再精确定位；自动导览以图文视频为主体、地图为辅助语境 | `Experience` 镜头 helper、章节 `mapView`、Tour 响应式布局 |
 | 2026-08-13 | GPS focus 使用本地 PNG-alpha overlay 与短边 feather，透明叠加于 30m surface | 保留真实 10m 像素并消除 JPEG 纯色填边和硬矩形边界；focus 失败仍独立退回 base surface | surface 准备脚本、focus PMTiles/provenance、MapLibre tile type 与降级测试 |
 | 2026-08-13 | 水脉时间机与药材标本柜在自由地图使用 UI navigation portal，并复用既有知识节点作为界面锚点 | 让探索工具可从地图直接进入，同时明确 portal 不是新增地理事实点、不写重复坐标且不进入 story point 统计 | 自由地图 marker、数字展框入口与点位统计 |
+| 2026-08-27 | 历史生态叙事复用现有 water/time-machine 和唯一 MapLibre，不增加第六主章节；沙漠空间关系没有核验 polygon 时只做区域示意，不伪造历史边界 | 保持五章时长与地图状态单一所有权，同时让“两沙夹一洲”可见而不把示意错当为边界数据 | `waterStages`、历史展项、地图区域标签、后续历史生态扩展 |
+| 2026-08-27 | 对外发布改为 Vinext 纯静态导出，并使用 `<GitHub用户名>.github.io` 根仓库承载 GitHub Pages | 用户无法注册 Cloudflare；根站点仓库可让 PMTiles、视频和图片继续使用可靠的根路径，同时规避当前 Vinext 项目子路径静态导出的 RSC/basePath 问题 | `next.config.ts`、Vite 配置、公开资源路径、GitHub Actions、后续发布流程 |

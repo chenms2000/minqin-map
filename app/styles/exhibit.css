@@ -53,17 +53,32 @@
 .event-strip button.active { border-color: #e5c57e; }
 .event-strip img { width: 100%; height: 100%; object-fit: cover; opacity: .7; }
 .event-strip time { position: absolute; inset: auto 2px 2px; color: #fff; font-size: 6px; text-shadow: 0 1px 2px #000; }
-.water-visual { position: relative; margin: 5px 22px 14px; height: 100px; display: grid; place-items: center; overflow: hidden; background: linear-gradient(125deg,#26372e,#18362e); border: 1px solid rgba(89,168,182,.25); }
-.water-visual > div { position: relative; z-index: 2; width: 90%; display: grid; grid-template-columns: 1fr 1fr 1fr; align-items: center; text-align: center; font-size: 7px; }
-.water-visual > div::before { content: ""; position: absolute; z-index: -1; left: 12%; right: 12%; height: 2px; background: rgba(92,183,196,.6); }
-.water-visual > div > * { padding: 5px 3px; background: #12251c; }
-.water-visual small { position: absolute; inset: auto 8px 6px; color: rgba(255,255,255,.42); font-size: 6px; }
-.water-pulse { position: absolute; width: 90px; height: 90px; border-radius: 50%; background: rgba(59,155,173,.13); box-shadow: 0 0 0 12px rgba(59,155,173,.05); transform: scale(.35); transition: transform .65s ease; }
-.water-pulse.stage-2 { transform: scale(.55); }.water-pulse.stage-3 { transform: scale(.75); }.water-pulse.stage-4 { transform: scale(1); }
+.water-visual { position: relative; margin: 5px 22px 14px; height: 112px; display: grid; grid-template-columns: 1fr 1.16fr 1fr; align-items: stretch; overflow: hidden; color: #f6ecd0; background: linear-gradient(100deg, #6f5735 0%, #26372e 33%, #18362e 66%, #765b34 100%); border: 1px solid rgba(177,147,91,.32); }
+.water-visual::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, rgba(206,165,91,.18), transparent 30% 70%, rgba(206,165,91,.18)); transition: opacity .25s ease; }
+.water-visual .sand-side, .water-visual .oasis-core { position: relative; z-index: 2; display: grid; place-content: center; gap: 4px; padding: 12px 9px 24px; text-align: center; }
+.water-visual .sand-side span { color: rgba(246,236,208,.56); font-size: 6px; letter-spacing: .12em; }
+.water-visual .sand-side b { font-family: var(--serif); font-size: 9px; line-height: 1.35; }
+.water-visual .oasis-core { border-inline: 1px solid rgba(151,187,154,.18); background: rgba(18,52,39,.62); }
+.water-visual .oasis-core b { color: #dce5b4; font-family: var(--serif); font-size: 12px; }
+.water-visual .oasis-core span { color: rgba(255,255,255,.65); font-size: 6px; line-height: 1.45; }
+.water-visual .oasis-core i { width: 68%; height: 2px; margin: 3px auto 0; background: linear-gradient(90deg, #9c7650, #59a5b2 45% 62%, #7ea06f); transform-origin: left center; transition: transform .3s ease; }
+.water-visual > small { position: absolute; z-index: 3; inset: auto 8px 6px; color: rgba(255,255,255,.48); font-size: 6px; }
+.water-visual.phase-crisis::after { opacity: 1; }
+.water-visual.phase-crisis .oasis-core { background: rgba(37,55,40,.52); }
+.water-visual.phase-crisis .oasis-core i { transform: scaleX(.18); background: #a57450; }
+.water-visual.phase-pressure .oasis-core i, .water-visual.phase-mobilization .oasis-core i { transform: scaleX(.42); }
+.water-visual.phase-governance .oasis-core i { transform: scaleX(.68); }
+.water-visual.phase-return .oasis-core i { transform: scaleX(.84); }
+.water-visual.phase-recovery::after { opacity: .48; }
+.water-visual.phase-recovery .oasis-core i { transform: scaleX(1); }
 .water-readout { margin: 0 22px; padding: 14px; background: #ecdfbd; color: #19291f; }
 .water-readout time { color: #9a583c; font-size: 9px; letter-spacing: .1em; }
 .water-readout h3 { margin: 6px 0; font-family: var(--serif); font-size: 21px; }
-.water-readout > div { display: flex; align-items: baseline; gap: 7px; }.water-readout > div strong { font-size: 30px; }.water-readout > div span { font-size: 8px; }
+.water-primary-metric { display: flex; align-items: baseline; gap: 7px; }.water-primary-metric strong { font-size: 30px; }.water-primary-metric span { font-size: 8px; }
+.water-comparison { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 1px; margin: 12px 0; border: 1px solid rgba(25,41,31,.15); background: rgba(25,41,31,.15); }
+.water-comparison > div { display: grid; align-content: space-between; min-height: 60px; padding: 8px; background: #f4ead0; }
+.water-comparison span { color: #6c6f60; font-size: 7px; line-height: 1.35; }
+.water-comparison strong { margin-top: 6px; color: #315a43; font-size: 15px; }
 .water-readout p { margin: 6px 0; font-size: 9px; line-height: 1.55; }.water-readout small { display: block; color: #6c6f60; font-size: 7px; }.water-readout a { display: inline-block; margin: 7px 8px 0 0; color: #146b79; font-size: 7px; }
 .resource-view-switch { padding-bottom: 12px; }
 .specimen-tabs { display: grid; grid-template-columns: repeat(4,1fr); margin: 0 22px 10px; border: 1px solid rgba(255,255,255,.15); }
@@ -178,7 +193,9 @@
 .event-readout span, .event-readout p { font-size: 10px; }
 .timeline-range, .event-strip { padding-inline: 30px; }
 .water-visual { height: 128px; margin: 8px 30px 18px; border-radius: var(--radius-control); }
-.water-visual > div { font-size: 10px; }
+.water-visual .sand-side b { font-size: 11px; }
+.water-visual .oasis-core b { font-size: 15px; }
+.water-visual .oasis-core span { font-size: 8px; }
 .water-readout { margin: 0 30px 18px; padding: 24px; background: var(--surface-exhibit-raised); border: 1px solid var(--line); border-radius: var(--radius-control); }
 .water-readout time { font-size: 11px; }
 .water-readout h3 { font-size: 28px; }

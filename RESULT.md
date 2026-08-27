@@ -1,38 +1,26 @@
-# 4 分钟导览与地图探索入口收尾结果
+# GitHub Pages 纯静态化改造结果
 
-日期：2026-08-13
+日期：2026-08-27
 
 ## 已完成
 
-- 自动导览保持 44 个 frame 与唯一 `chapterFramesById → frame.durationSeconds` 时间轴；图片 9 帧 × 6.5 秒 = 58.5 秒，普通文字 7 帧 × 3 秒 = 21 秒，来源 20 帧 × 4 秒 = 80 秒。
-- 8 个视频继续使用 `asset.durationSeconds`，真实总时长保持 81.283 秒；未修改视频时长、未使用 `playbackRate`，Before / After 均为 81.283 秒。
-- 导览总时长为 240.783 秒，UI 显示约 4:00；未删除 intro、point、media、source、图片、正文或来源。
-- 自由地图新增“探索工具 / 水脉时间机”portal，运行时通过 `storyPointById.get("shiyang-system")` 复用已有知识节点坐标，点击后从第一阶段进入 `water` 模块。
-- 自由地图新增“探索工具 / 药材标本柜”portal，运行时通过 `storyPointById.get("planned-herbs")` 复用已有知识节点坐标，点击后进入 `resources` 模块的 `specimen` 视图。
-- 两个 portal 都只是 UI navigation portal，不新增 StoryPoint 或地理事实坐标，不进入点位统计，并在 Story / Tour 模式隐藏；进入时清理已有地图 drawer selection，退出展框后焦点返回地图区域。
-- Tour 镜头集中为 `cameraForTourFrame()`：intro 使用章节 overview，point 与带 pointId 的 media/source 使用 detail；`lastTourCameraKeyRef` 防止同点连续分镜重复 ease。
-- 第三章 intro 从 zoom 13.15 收敛为 11.45，1920×1080 与 1366×768 可同时读出三个实践点；GPS point 仍使用 zoom 13.85。
-- 原有 marker button 内加入直接派生自 `point.title` 的标签；四个图层均实测有名称，44×44 hit area 与 ARIA 保持。
-- Drawer 打开态与滚动区恢复 pointer events；A → B → C 连续切换时标题同步、scrollTop 归零、drawer 不关闭，滚轮实测可用。
-- Tour 桌面内容栏为约 56%，980px 为约 58%；390×844 保持地图约 38% / 内容约 62%，各尺寸无横向溢出。
-- A/B 确认高倍矩形 seam 来自 10m focus。Focus 改为 24 个 PNG-alpha 瓦片、1,883,514 bytes，裁切外透明并以 320m feather 混合 30m base；`?focus=missing` 继续独立降级。
-- 本任务只运行定向测试 `four-minute tour preserves videos and exposes map tool portals`，未运行全量 content、lint、build 或 test。
+- Vinext 改为 `output: "export"`，首页在构建阶段生成 `dist/client/index.html`，在线运行不需要 Node.js、Worker、数据库或 Cloudflare。
+- 移除未使用的 Cloudflare Worker、D1、ChatGPT 托管认证模板和运行时接线；既有工具包版本保留在锁文件中，避免无关依赖树重写。
+- 图片、视频、字幕和本地 PMTiles 统一经过公开资源路径 helper，静态导出后仍从同一站点加载。
+- 动态请求头元数据改为构建期静态元数据；GitHub Actions 会按仓库所有者生成 `https://<用户名>.github.io/og.png` 分享图地址。
+- 新增 GitHub Pages workflow：推送 `main` 后安装依赖、构建、上传 `dist/client` 并发布。
+- workflow 明确要求仓库名为 `<GitHub用户名>.github.io`。这让大型地图与媒体资源保持根路径，也规避当前 Vinext 版本在普通项目仓库子路径下的静态 RSC 导出问题。
+- P9 “绿洲生死线”、唯一 MapLibre、五章导览及全部本地地图/媒体资产均保留。
 
-## 人工验收留项
+## 验证
 
-- 完整观看一次约 4 分钟导览，确认 44 帧均保留、视频完整且未加速、图片与来源停留时间可接受、章节无跳帧，pause / resume、进度和剩余时间正常。
-- 在自由地图检查两个探索工具入口的可发现性、视觉权重、标签清晰度及与故事点的遮挡关系。
-- 分别点击水脉时间机与药材标本柜，确认默认入口、退出流程及焦点返回正常。
-- 在桌面与手机检查 portal 无横向溢出或大面积遮挡，并确认自动导览状态下 portal 不出现。
+- `npx tsc --noEmit`：通过，退出码 0。
+- 模拟 `example/example.github.io` 运行 `npm run build`：完成 5 个构建阶段，根路由标记为 Static，生成 `dist/client/index.html`、RSC、脚本、样式、PMTiles 和媒体。
+- 使用普通静态文件服务器读取 `dist/client`：首页、入口脚本、本地 PMTiles 和代表性图片均返回 HTTP 200，未启动 Vinext 或 Cloudflare 运行时。
+- Windows 上 Vinext 在打印 `Build complete` 后触发其预渲染子进程的 libuv 关闭断言，因此本机命令最终退出码仍为 1；产物已经生成并逐项确认。GitHub Actions 使用 Ubuntu，正式 workflow 尚未推送运行。
 
-## 仍未解决
+## 发布边界
 
-- P8 主 30m surface render context 未扩边：当前 `minqin-surface-2026.pmtiles` 仍是旧 0.05° buffer。真实相邻 Sentinel COG coverage Gate 尚未关闭，因此整体 surface 边界问题仍是 blocker。
-- 本轮只修复 GPS 10m focus overlay 的矩形硬边，不宣称 P8 整体完成。
-
-## 安全边界
-
-- 未修改 GPS 坐标、故事事实、视频真实时长、播放状态机或主 30m surface。
-- 未使用纯色、CSS 渐变、AI 纹理或拉伸数据遮缝。
-- 未修改受保护的 `docs/CONTEXT_POLICY.md`、`docs/HANDOFF.md`。
-- 本任务现有未提交代码已经满足要求，仅完成审查与结果文档收尾；未 commit、push 或 deploy。
+- 未修改 `.gitignore`、`docs/CONTEXT_POLICY.md` 或 `docs/HANDOFF.md`。
+- 未 commit、push 或发布；GitHub 仓库创建、Pages 启用与首次公开上线仍需用户授权。
+- P8 主 30m surface render-context 扩边仍未完成，本轮未修改其地图资产。

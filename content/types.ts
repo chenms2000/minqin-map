@@ -161,6 +161,9 @@ export type WaterStage = {
   mapView: { center: [number, number]; zoom: number; pitch: number; bearing: number };
   sourceIds: string[];
   geometryMode: "symbolic" | "verified";
+  phase: "pressure" | "mobilization" | "crisis" | "governance" | "return" | "recovery";
+  visualNote: string;
+  comparison?: Array<{ label: string; value: string }>;
 };
 
 export type RelationshipEdge = {

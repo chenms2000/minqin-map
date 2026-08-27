@@ -3,7 +3,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import type { RefObject } from "react";
-import { storyPoints, tourChapters, type MediaAsset, type SourceRef, type StoryLayer, type StoryPoint, type TourChapter } from "@/content";
+import { publicAsset, storyPoints, tourChapters, type MediaAsset, type SourceRef, type StoryLayer, type StoryPoint, type TourChapter } from "@/content";
 import { layerMeta } from "@/app/lib/map-config";
 import { accuracyClass } from "@/app/lib/formatters";
 
@@ -66,10 +66,10 @@ export function InteractiveMap({ sectionRef, frameRef, containerRef, closeButton
               return <article className="evidence-group" id={`evidence-${group.id}`} key={group.id}>
                 <header><span>{group.label}</span><h4>{group.title}</h4><p>{group.summary}</p></header>
                 <p className="evidence-boundary">内容边界 / {group.boundary}</p>
-                {groupMedia.length > 0 && <div className="story-media evidence-media">{groupMedia.map((asset) => <figure key={asset.id}>{asset.type === "image" ? <img src={asset.src} alt={asset.alt} loading="lazy" /> : <video src={asset.src} poster={asset.poster} controls preload="metadata" aria-label={asset.alt}><track kind="captions" src="/media/shared/ambient-zh.vtt" srcLang="zh" label="中文说明" default /></video>}<figcaption><span>{asset.timeLabel ?? asset.capturedAt}</span>{asset.caption}</figcaption></figure>)}</div>}
+                {groupMedia.length > 0 && <div className="story-media evidence-media">{groupMedia.map((asset) => <figure key={asset.id}>{asset.type === "image" ? <img src={asset.src} alt={asset.alt} loading="lazy" /> : <video src={asset.src} poster={asset.poster} controls preload="metadata" aria-label={asset.alt}><track kind="captions" src={publicAsset("/media/shared/ambient-zh.vtt")} srcLang="zh" label="中文说明" default /></video>}<figcaption><span>{asset.timeLabel ?? asset.capturedAt}</span>{asset.caption}</figcaption></figure>)}</div>}
               </article>;
             })}
-          </div> : selectedMedia.length > 0 && <div className="story-media">{selectedMedia.map((asset) => <figure key={asset.id}>{asset.type === "image" ? <img src={asset.src} alt={asset.alt} loading="lazy" /> : <video src={asset.src} poster={asset.poster} controls preload="metadata" aria-label={asset.alt}><track kind="captions" src="/media/shared/ambient-zh.vtt" srcLang="zh" label="中文说明" default /></video>}<figcaption><span>{asset.timeLabel ?? asset.capturedAt}</span>{asset.caption}</figcaption></figure>)}</div>}
+          </div> : selectedMedia.length > 0 && <div className="story-media">{selectedMedia.map((asset) => <figure key={asset.id}>{asset.type === "image" ? <img src={asset.src} alt={asset.alt} loading="lazy" /> : <video src={asset.src} poster={asset.poster} controls preload="metadata" aria-label={asset.alt}><track kind="captions" src={publicAsset("/media/shared/ambient-zh.vtt")} srcLang="zh" label="中文说明" default /></video>}<figcaption><span>{asset.timeLabel ?? asset.capturedAt}</span>{asset.caption}</figcaption></figure>)}</div>}
           {selectedSources.length > 0 && <div className="drawer-sources"><span>资料来源</span>{selectedSources.map((source) => <a key={source.id} href={source.url} target="_blank" rel="noreferrer">{source.publisher} · {source.title} ↗</a>)}</div>}
         </div></>}
       </aside>

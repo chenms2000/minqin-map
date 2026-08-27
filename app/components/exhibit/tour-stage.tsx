@@ -2,7 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import type { ExhibitVisualType, MediaAsset, SourceRef, StoryPoint, TourChapter, TourFrame } from "@/content";
+import { publicAsset, type ExhibitVisualType, type MediaAsset, type SourceRef, type StoryPoint, type TourChapter, type TourFrame } from "@/content";
 
 type TourStageProps = {
   chapter: TourChapter;
@@ -29,7 +29,7 @@ export function TourStage({ chapter, chapterCount, frame, frameIndex, frameCount
     {media && <figure className="tour-media">
       {media.type === "image"
         ? <img key={frame.id} src={media.src} alt={media.alt} />
-        : <video key={frame.id} src={media.src} autoPlay={isPlaying} muted playsInline preload="metadata" aria-label={media.alt}><track kind="captions" src="/media/shared/ambient-zh.vtt" srcLang="zh" label="中文说明" default /></video>}
+        : <video key={frame.id} src={media.src} autoPlay={isPlaying} muted playsInline preload="metadata" aria-label={media.alt}><track kind="captions" src={publicAsset("/media/shared/ambient-zh.vtt")} srcLang="zh" label="中文说明" default /></video>}
       <figcaption>{media.caption}</figcaption>
     </figure>}
 

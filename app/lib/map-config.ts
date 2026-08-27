@@ -1,6 +1,7 @@
 import { layers, namedFlavor } from "@protomaps/basemaps";
 import type { FeatureCollection, LineString } from "geojson";
 import type { StoryLayer } from "@/content";
+import { publicAsset } from "@/content/public-assets";
 
 type ZoomExpression = ["interpolate", ["linear"], ["zoom"], ...number[]];
 export type MapPresentationMode = "free" | "story" | "tour";
@@ -92,19 +93,19 @@ export const INTERACTION_BOUNDS: [[number, number], [number, number]] = [[102.45
 export const RENDER_CONTEXT_BOUNDS: [[number, number], [number, number]] = [[102.12890625, 37.474858084971025], [104.0625, 39.67337039176559]];
 export const mapBounds = INTERACTION_BOUNDS;
 export const defaultView = { center: [103.16, 38.72] as [number, number], zoom: 9.15, pitch: 38, bearing: -12 };
-export const localArchivePath = "/maps/minqin-2026.pmtiles";
+export const localArchivePath = publicAsset("/maps/minqin-2026.pmtiles");
 export const localArchiveName = "minqin-2026.pmtiles";
-export const localTerrainArchivePath = "/maps/minqin-terrain-2026.pmtiles";
+export const localTerrainArchivePath = publicAsset("/maps/minqin-terrain-2026.pmtiles");
 export const localTerrainArchiveName = "minqin-terrain-2026.pmtiles";
 export const terrainSourceId = "minqin-terrain-dem";
 export const terrainHillshadeLayerId = "minqin-terrain-hillshade";
 export const terrainAttribution = '<a href="https://registry.opendata.aws/terrain-tiles/" target="_blank">Terrain: Mapzen</a> · <a href="https://www.usgs.gov/centers/eros/science/usgs-eros-archive-digital-elevation-shuttle-radar-topography-mission-srtm-1" target="_blank">SRTM / GMTED2010 courtesy of USGS</a>';
-export const localSurfaceArchivePath = "/maps/minqin-surface-2026.pmtiles";
+export const localSurfaceArchivePath = publicAsset("/maps/minqin-surface-2026.pmtiles");
 export const localSurfaceArchiveName = "minqin-surface-2026.pmtiles";
 export const surfaceSourceId = "minqin-surface-raster";
 export const surfaceLayerId = "minqin-surface-texture";
 export const surfaceAttribution = '<a href="https://registry.opendata.aws/sentinel-2-l2a-cogs/" target="_blank">Contains modified Copernicus Sentinel data 2026</a> · Element 84';
-export const localSurfaceFocusArchivePath = "/maps/minqin-surface-focus-2026.pmtiles";
+export const localSurfaceFocusArchivePath = publicAsset("/maps/minqin-surface-focus-2026.pmtiles");
 export const surfaceFocusSourceId = "minqin-surface-focus-raster";
 export const surfaceFocusLayerId = "minqin-surface-focus-texture";
 export const surfaceFocusAttribution = surfaceAttribution;
@@ -158,6 +159,13 @@ export const contextLabels = [
   { name: "红崖山水库", coordinates: [103.04, 38.42] as [number, number], kind: "water", ...cartographicTuning.context.water },
   { name: "青土湖", coordinates: [103.56, 39.12] as [number, number], kind: "water", ...cartographicTuning.context.water },
 ];
+
+// These anchors communicate regional direction only; they are not desert polygons or historical boundaries.
+export const historyContextLabels = [
+  { name: "巴丹吉林沙漠南缘", coordinates: [102.72, 39.12] as [number, number], kind: "desert badain" },
+  { name: "民勤绿洲", coordinates: [103.14, 38.76] as [number, number], kind: "oasis" },
+  { name: "腾格里沙漠西缘", coordinates: [103.63, 38.58] as [number, number], kind: "desert tengger" },
+] as const;
 
 export const practiceRoute: FeatureCollection<LineString> = {
   type: "FeatureCollection",
