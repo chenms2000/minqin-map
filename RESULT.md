@@ -12,6 +12,7 @@
 - `next.config.ts` 只在 Pages workflow 显式设置 `GITHUB_PAGES_BUILD=true` 时启用由仓库名派生的路径型 `assetPrefix`、公开资源前缀和 `NEXT_PUBLIC_SITE_URL`；应用路由仍为 `/`。
 - Pages workflow 在构建后将 Vinext 写入 `dist/client/minqin-map/_next` 的物理资源提升到 `dist/client/_next`；HTML 中的 URL 保持 `/minqin-map/_next/`，由 GitHub Pages 的项目站点路径映射到 artifact 根目录。
 - workflow 在上传前强制检查 HTML：必须出现当前仓库名对应的 `/<repository>/_next/`，且不得残留根路径 `/_next/`；失败时不会发布 artifact。
+- 仓库重命名后的首次完整 Pages 发布持续处于 `updating_pages` 并触发 `deploy-pages` 默认 10 分钟超时；部署等待上限已提高到 30 分钟，仅延长 GitHub 后端处理窗口，不改变构建产物。
 - `.github/workflows/deploy-pages.yml` 不再允许账户根仓库命名，构建产物仍唯一来自 `dist/client`。
 - `publicAsset` 继续统一处理图片、视频、字幕和 PMTiles URL；未修改地图、内容、导览、媒体或 PMTiles 资产。
 - `.github/workflows/deploy-tencent-cos.yml` 未修改，因此 COS 构建不带 `/minqin-map` 前缀。
