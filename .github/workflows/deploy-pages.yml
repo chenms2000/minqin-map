@@ -54,6 +54,12 @@ jobs:
           mv "$prefixed_assets" dist/client/_next
           rmdir "dist/client/${repository_name}"
 
+          grep -R --include='*.html' -q "/${repository_name}/_next/" dist/client
+          if grep -R --include='*.html' -q '="/_next/' dist/client; then
+            echo "Static HTML still contains root-level /_next/ URLs."
+            exit 1
+          fi
+
       - name: Disable Jekyll processing
         run: touch dist/client/.nojekyll
 
