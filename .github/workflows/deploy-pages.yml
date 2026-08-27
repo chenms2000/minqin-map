@@ -30,18 +30,22 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Require a root GitHub Pages repository
+      - name: Require a project GitHub Pages repository
         shell: bash
         run: |
-          expected="${GITHUB_REPOSITORY_OWNER}.github.io"
+          reserved="${GITHUB_REPOSITORY_OWNER}.github.io"
           actual="${GITHUB_REPOSITORY#*/}"
-          if [[ "$actual" != "$expected" ]]; then
-            echo "Rename or create the repository as $expected so this map can use root-relative PMTiles and media URLs."
+          if [[ "$actual" == "$reserved" ]]; then
+            echo "Rename this repository so the map publishes below /<repository-name>/ and leaves the account root free."
             exit 1
           fi
 
       - name: Build static site
-        run: npm run build
+        env:
+          GITHUB_PAGES_BUILD: "true"
+        run: |
+          npm run build
+          test -f dist/client/index.html
 
       - name: Disable Jekyll processing
         run: touch dist/client/.nojekyll
