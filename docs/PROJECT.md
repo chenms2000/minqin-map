@@ -63,7 +63,7 @@
 - P9 继续复用原 water/time-machine 与唯一 MapLibre；只在历史工具开启时显示巴丹吉林沙漠南缘、民勤绿洲和腾格里沙漠西缘的区域示意，并明示“非历史沙漠边界”；退出后移除 overlay 并恢复进入前自由地图镜头。
 - P9 以约 3% → 18.28% 森林覆盖率和 380 km 环绿洲锁边林带呈现阶段性恢复，并保留治理仍需持续的事实边界。
 - 发布架构已从 Cloudflare Worker/D1 模板切换为 Vinext `output: "export"`：运行时只需 `dist/client` 中的 HTML、JS、CSS、PMTiles、图片和视频，不再需要服务器、数据库或 Cloudflare 账号。
-- GitHub Pages 使用普通项目仓库 `minqin-map`，发布地址为 `https://chenms2000.github.io/minqin-map/`；Pages workflow 保持应用路由为 `/`，并以 `assetPrefix` 与 `publicAsset` 分别为构建资源、媒体和 PMTiles 加上 `/minqin-map` 前缀，规避 Vinext 静态预渲染的 RSC/basePath 404。
+- GitHub Pages 使用普通项目仓库 `minqin-map`，发布地址为 `https://chenms2000.github.io/minqin-map/`；Pages workflow 保持应用路由为 `/`，并以路径型 `assetPrefix` 与 `publicAsset` 分别为构建资源、媒体和 PMTiles 加上 `/minqin-map` 前缀。Vinext 会按该前缀把 `_next` 写入嵌套目录，workflow 在上传前将物理 `_next` 目录提升到 artifact 根目录，避免 GitHub Pages 再次叠加项目路径。
 - P11A 的 Tencent COS workflow 继续仅由 `workflow_dispatch` 手动触发，使用 Node 22 构建同一 `dist/client`，显式以 Repository Variable `SITE_URL` 覆盖正式自定义域名，并通过腾讯官方 COSCLI 同步到香港 Bucket；COS 构建不启用 Pages base path，仍运行于域名根路径 `/`。
 - 第二通道采用香港 COS 与 EdgeOne“全球可用区（不含中国大陆）”，不依赖中国大陆 CDN 节点；未来若启用中国大陆境内加速仍需 ICP 备案。`.pmtiles` 的 Range/206 与分片回源是正式发布 Gate，控制台步骤见 `docs/DEPLOY_TENCENT_COS.md`。
 - Surface 在基础矢量图 `mapReady` 后按 HTTP Range 渐进加载，实测 `bytes=0-511` 返回 206；surface 与 terrain 各自独立失败，均不触发基础 fallback。自由 / Story / Tour 复用同一 raster layer 并逐级减弱。

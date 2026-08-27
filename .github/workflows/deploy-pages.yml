@@ -47,6 +47,13 @@ jobs:
           npm run build
           test -f dist/client/index.html
 
+          repository_name="${GITHUB_REPOSITORY#*/}"
+          prefixed_assets="dist/client/${repository_name}/_next"
+          test -d "$prefixed_assets"
+          test ! -e dist/client/_next
+          mv "$prefixed_assets" dist/client/_next
+          rmdir "dist/client/${repository_name}"
+
       - name: Disable Jekyll processing
         run: touch dist/client/.nojekyll
 

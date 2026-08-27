@@ -8,7 +8,7 @@ const siteUrl = process.env.SITE_URL ?? (githubPagesBuild ? `https://${repositor
 
 const nextConfig: NextConfig = {
   output: "export",
-  assetPrefix: githubPagesBuild ? siteUrl.replace(/\/$/, "") : undefined,
+  assetPrefix: githubPagesBuild ? basePath : undefined,
   trailingSlash: true,
   images: { unoptimized: true },
   env: {
