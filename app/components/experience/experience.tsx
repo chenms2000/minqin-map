@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { chapterFramesById, herbs, mediaById, relationshipEdges, sourceById, storyPointById, storyPoints, timelineEvents, tourChapters, waterStages, type ResourceSectionKey, type StoryLayer, type StoryPoint, type TimelineCategory, type TourChapter, type TourFrame } from "@/content";
+import { backgroundTracks, chapterFramesById, herbs, mediaById, relationshipEdges, sourceById, storyPointById, storyPoints, timelineEvents, tourChapters, waterStages, type ResourceSectionKey, type StoryLayer, type StoryPoint, type TimelineCategory, type TourChapter, type TourFrame } from "@/content";
 import { DigitalExhibit, type ExhibitModule, type ResourceView, type TimelineDay } from "@/app/components/exhibit/digital-exhibit";
 import { InteractiveMap } from "@/app/components/map/interactive-map";
 import { LongFormPage } from "@/app/components/sections/long-form-page";
@@ -63,6 +63,10 @@ export function Experience() {
   const [resourceSection, setResourceSection] = useState<ResourceSectionKey>("habitat");
   const [resourceView, setResourceView] = useState<ResourceView>("specimen");
   const [relationshipIndex, setRelationshipIndex] = useState(0);
+  const [bgmEnabled, setBgmEnabled] = useState(false);
+  const [bgmTrackIndex, setBgmTrackIndex] = useState(0);
+  const [bgmVolume] = useState(0.14);
+  const [playingVideoCount, setPlayingVideoCount] = useState(0);
 
   const mapFrame = useRef<HTMLDivElement>(null);
   const closeButton = useRef<HTMLButtonElement>(null);
@@ -74,6 +78,10 @@ export function Experience() {
   const drawerWasOpen = useRef(false);
   const lastTourCameraKeyRef = useRef<string | null>(null);
   const mapToolReturnView = useRef<{ center: [number, number]; zoom: number; pitch: number; bearing: number } | null>(null);
+  const bgmAudio = useRef<HTMLAudioElement>(null);
+  const bgmFadeFrame = useRef<number | null>(null);
+  const bgmPreferenceTouched = useRef(false);
+  const playingVideos = useRef(new Set<HTMLVideoElement>());
 
   const layerPoints = useMemo(() => storyPoints.filter((point) => point.layer === activeLayer), [activeLayer]);
   const selected = storyPointById.get(selectedId ?? "") ?? null;
@@ -90,6 +98,8 @@ export function Experience() {
   const activeTourPoint = storyPointById.get(activeTourFrame?.pointId ?? "");
   const totalTourSeconds = chapterDurations.reduce((total, duration) => total + duration, 0);
   const totalElapsedSeconds = chapterDurations.slice(0, tourIndex).reduce((total, duration) => total + duration, 0) + chapterElapsedSeconds;
+  const bgmTrack = backgroundTracks[bgmTrackIndex];
+  const bgmDucked = playingVideoCount > 0;
   const storyChapter = tourChapters[storyIndex];
   const storyChapterPoints = useMemo(() => storyChapter.pointIds.map((id) => storyPointById.get(id)).filter((point) => point !== undefined), [storyChapter]);
   const activePoints = storyMapMode && !tourMode ? storyChapterPoints : layerPoints;
@@ -111,6 +121,56 @@ export function Experience() {
           : selectedResourcePoint?.id ?? null;
 
   const { mapContainer, mapInstance, mapFallback, mapReady, mapProgress } = useMinqinMap({ activeLayer, activePoints, mapSelectedPointId, presentationMode: mapPresentationMode, historyStage, toolPortals: mapToolPortals, onPointActivate: activateMapPoint, onToolActivate: openMapTool });
+
+  useEffect(() => {
+    const activeVideos = playingVideos.current;
+    const syncPlayingVideos = () => setPlayingVideoCount(activeVideos.size);
+    const handlePlay = (event: Event) => {
+      if (!(event.target instanceof HTMLVideoElement)) return;
+      activeVideos.add(event.target);
+      syncPlayingVideos();
+    };
+    const handleStop = (event: Event) => {
+      if (!(event.target instanceof HTMLVideoElement)) return;
+      activeVideos.delete(event.target);
+      syncPlayingVideos();
+    };
+    document.addEventListener("play", handlePlay, true);
+    document.addEventListener("pause", handleStop, true);
+    document.addEventListener("ended", handleStop, true);
+    return () => {
+      document.removeEventListener("play", handlePlay, true);
+      document.removeEventListener("pause", handleStop, true);
+      document.removeEventListener("ended", handleStop, true);
+      activeVideos.clear();
+    };
+  }, []);
+
+  useEffect(() => {
+    const audio = bgmAudio.current;
+    if (!audio) return;
+    if (bgmFadeFrame.current !== null) window.cancelAnimationFrame(bgmFadeFrame.current);
+    if (!bgmEnabled) {
+      audio.pause();
+      return;
+    }
+    const targetVolume = bgmDucked ? Math.min(0.02, bgmVolume) : bgmVolume;
+    const startVolume = audio.volume;
+    const duration = bgmDucked ? 700 : 1200;
+    const startedAt = performance.now();
+    const fade = (now: number) => {
+      const progress = Math.min(1, (now - startedAt) / duration);
+      audio.volume = startVolume + (targetVolume - startVolume) * progress;
+      if (progress < 1) bgmFadeFrame.current = window.requestAnimationFrame(fade);
+      else bgmFadeFrame.current = null;
+    };
+    if (audio.paused) void audio.play().catch(() => setBgmEnabled(false));
+    bgmFadeFrame.current = window.requestAnimationFrame(fade);
+    return () => {
+      if (bgmFadeFrame.current !== null) window.cancelAnimationFrame(bgmFadeFrame.current);
+      bgmFadeFrame.current = null;
+    };
+  }, [bgmDucked, bgmEnabled, bgmTrackIndex, bgmVolume]);
 
   useEffect(() => {
     if (!tourMode || exhibitModule !== "tour" || tourPlayback !== "playing" || activeTourFrameMedia?.type === "video") return;
@@ -269,6 +329,24 @@ export function Experience() {
   }, []);
   const handleStoryTargetHandled = useCallback(() => setStoryTargetId(null), []);
 
+  function playBackgroundMusic() {
+    const audio = bgmAudio.current;
+    if (!audio) return;
+    audio.volume = playingVideos.current.size > 0 ? Math.min(0.02, bgmVolume) : bgmVolume;
+    void audio.play().catch(() => setBgmEnabled(false));
+  }
+
+  function toggleBackgroundMusic() {
+    bgmPreferenceTouched.current = true;
+    if (bgmEnabled) {
+      setBgmEnabled(false);
+      bgmAudio.current?.pause();
+      return;
+    }
+    setBgmEnabled(true);
+    playBackgroundMusic();
+  }
+
   function resetChapterProgress() {
     chapterElapsedRef.current = 0;
     setChapterElapsedSeconds(0);
@@ -296,6 +374,10 @@ export function Experience() {
     const safeIndex = Math.max(0, Math.min(tourChapters.length - 1, initialIndex));
     previousFocus.current = document.activeElement as HTMLElement;
     lastTourCameraKeyRef.current = null;
+    if (autoplay && !bgmPreferenceTouched.current && !bgmEnabled) {
+      setBgmEnabled(true);
+      playBackgroundMusic();
+    }
     resetChapterProgress(); setTourIndex(safeIndex); setTourPlayback(autoplay ? "playing" : "idle"); setExhibitModule("tour"); setActiveLayer(tourChapters[safeIndex].layer); setSelectedId(null); setTourMode(true); updateExhibitUrl("tour", safeIndex);
   }
 
@@ -425,7 +507,8 @@ export function Experience() {
   const mapSlot = <InteractiveMap sectionRef={mapSection} frameRef={mapFrame} containerRef={mapContainer} closeButtonRef={closeButton} drawerScrollRef={drawerScroll} activeLayer={activeLayer} activePoints={activePoints} selected={selected} selectedMedia={selectedMedia} selectedSources={selectedSources} mapReady={mapReady} mapFallback={mapFallback} mapProgress={mapProgress} storyMode={storyMapMode && !tourMode} storyChapter={storyChapter} onLayerChange={(layer) => { setActiveLayer(layer); setSelectedId(null); }} onPointActivate={activateMapPoint} onCloseStory={closeStory} onResetMap={resetMap} onToggleFullscreen={toggleFullscreen} />;
 
   return <main className={[tourMode ? "tour-mode" : "", storyMapMode && !tourMode ? "story-map-mode" : ""].filter(Boolean).join(" ")}>
-    <LongFormPage mapSlot={mapSlot} showAllMedia={showAllMedia} onToggleMedia={() => setShowAllMedia((value) => !value)} onStartExhibit={startTour} storyIndex={storyIndex} storyTargetId={storyTargetId} onStoryChapterChange={handleStoryChapterChange} onStoryMapModeChange={handleStoryMapModeChange} onStoryTargetHandled={handleStoryTargetHandled} />
-    {tourMode && <DigitalExhibit panelRef={tourPanel} module={exhibitModule} tourIndex={tourIndex} tourFrameIndex={activeTourFrameIndex} playback={tourPlayback} elapsedSeconds={totalElapsedSeconds} totalSeconds={totalTourSeconds} timelineDay={timelineDay} timelineCategory={timelineCategory} timelineIndex={timelineIndex} waterStageIndex={waterStageIndex} resourceIndex={resourceIndex} resourceSection={resourceSection} resourceView={resourceView} relationshipIndex={relationshipIndex} onEnd={endTour} onSelectModule={selectExhibitModule} onGoChapter={goToChapter} onTogglePlayback={toggleTourPlayback} onTourVideoTimeUpdate={syncTourVideoProgress} onTourVideoEnded={completeTourVideo} onExploreMap={() => leaveTourFor("map")} onViewEvidence={() => leaveTourFor("sources")} onSetTimelineDay={(day) => { setTimelineDay(day); setTimelineCategory("全部"); setTimelineIndex(0); }} onSetTimelineCategory={(category) => { setTimelineCategory(category); setTimelineIndex(0); }} onSelectTimelineEvent={selectTimelineEvent} onSelectWaterStage={selectWaterStage} onSelectResource={selectResource} onSetResourceSection={setResourceSection} onSetResourceView={setResourceView} onSetRelationshipIndex={setRelationshipIndex} onActivateRelationshipPoint={activateRelationshipPoint} onStep={stepExhibit} onRestart={() => { const shouldResume = tourPlayback === "playing"; resetChapterProgress(); setTourIndex(0); setTourPlayback(shouldResume ? "playing" : "idle"); setTimelineIndex(0); setWaterStageIndex(0); setResourceIndex(0); setRelationshipIndex(0); setExhibitModule("tour"); setActiveLayer(tourChapters[0].layer); setSelectedId(null); updateExhibitUrl("tour", 0, true); }} />}
+    <audio ref={bgmAudio} src={bgmTrack.src} preload="metadata" aria-hidden="true" onEnded={() => setBgmTrackIndex((index) => (index + 1) % backgroundTracks.length)} />
+    <LongFormPage mapSlot={mapSlot} showAllMedia={showAllMedia} onToggleMedia={() => setShowAllMedia((value) => !value)} onStartExhibit={startTour} storyIndex={storyIndex} storyTargetId={storyTargetId} onStoryChapterChange={handleStoryChapterChange} onStoryMapModeChange={handleStoryMapModeChange} onStoryTargetHandled={handleStoryTargetHandled} bgmEnabled={bgmEnabled} bgmTrackTitle={bgmTrack.title} onToggleBgm={toggleBackgroundMusic} />
+    {tourMode && <DigitalExhibit panelRef={tourPanel} module={exhibitModule} tourIndex={tourIndex} tourFrameIndex={activeTourFrameIndex} playback={tourPlayback} elapsedSeconds={totalElapsedSeconds} totalSeconds={totalTourSeconds} timelineDay={timelineDay} timelineCategory={timelineCategory} timelineIndex={timelineIndex} waterStageIndex={waterStageIndex} resourceIndex={resourceIndex} resourceSection={resourceSection} resourceView={resourceView} relationshipIndex={relationshipIndex} bgmEnabled={bgmEnabled} bgmTrackTitle={bgmTrack.title} onToggleBgm={toggleBackgroundMusic} onEnd={endTour} onSelectModule={selectExhibitModule} onGoChapter={goToChapter} onTogglePlayback={toggleTourPlayback} onTourVideoTimeUpdate={syncTourVideoProgress} onTourVideoEnded={completeTourVideo} onExploreMap={() => leaveTourFor("map")} onViewEvidence={() => leaveTourFor("sources")} onSetTimelineDay={(day) => { setTimelineDay(day); setTimelineCategory("全部"); setTimelineIndex(0); }} onSetTimelineCategory={(category) => { setTimelineCategory(category); setTimelineIndex(0); }} onSelectTimelineEvent={selectTimelineEvent} onSelectWaterStage={selectWaterStage} onSelectResource={selectResource} onSetResourceSection={setResourceSection} onSetResourceView={setResourceView} onSetRelationshipIndex={setRelationshipIndex} onActivateRelationshipPoint={activateRelationshipPoint} onStep={stepExhibit} onRestart={() => { const shouldResume = tourPlayback === "playing"; resetChapterProgress(); setTourIndex(0); setTourPlayback(shouldResume ? "playing" : "idle"); setTimelineIndex(0); setWaterStageIndex(0); setResourceIndex(0); setRelationshipIndex(0); setExhibitModule("tour"); setActiveLayer(tourChapters[0].layer); setSelectedId(null); updateExhibitUrl("tour", 0, true); }} />}
   </main>;
 }

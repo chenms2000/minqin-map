@@ -2,6 +2,7 @@ export * from "./types";
 export { publicAsset, siteBasePath } from "./public-assets";
 export { sources } from "./sources";
 export { media } from "./media";
+export { backgroundMusicLicense, backgroundTracks } from "./audio";
 export { storyPoints } from "./story-points";
 export { timelineCategories, timelineEvents } from "./field-timeline";
 export { fieldTracks } from "./field-tracks";

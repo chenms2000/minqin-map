@@ -479,6 +479,33 @@ test("continuous tour preserves optional现场 sound and rotates derived frames"
   assert.doesNotMatch(exhibit, /见视频下方文字|自动分镜 · AUTO STORYBOARD/);
 });
 
+test("global background soundtrack cycles three local Mixkit tracks and ducks under video", async () => {
+  const [audioCatalog, experience, longPage, chrome] = await Promise.all([
+    readFile(new URL("../content/audio.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/components/experience/experience.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/components/sections/long-form-page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/components/exhibit/exhibit-chrome.tsx", import.meta.url), "utf8"),
+  ]);
+  for (const title of ["Forest Mist Whispers", "Valley Sunset", "Rest Now"]) assert.match(audioCatalog, new RegExp(title));
+  for (const audioPath of ["forest-mist-whispers.mp3", "valley-sunset.mp3", "rest-now.mp3"]) {
+    const info = await stat(new URL(`../public/audio/${audioPath}`, import.meta.url));
+    assert.ok(info.size > 100_000, `${audioPath} should be a local published audio asset`);
+  }
+  assert.match(audioCatalog, /Mixkit Stock Music Free License/);
+  assert.match(experience, /const \[bgmEnabled, setBgmEnabled\] = useState\(false\)/);
+  assert.match(experience, /const \[bgmTrackIndex, setBgmTrackIndex\] = useState\(0\)/);
+  assert.match(experience, /const \[bgmVolume\] = useState\(0\.14\)/);
+  assert.match(experience, /setBgmTrackIndex\(\(index\) => \(index \+ 1\) % backgroundTracks\.length\)/);
+  assert.match(experience, /document\.addEventListener\("play", handlePlay, true\)/);
+  assert.match(experience, /targetVolume = bgmDucked \? Math\.min\(0\.02, bgmVolume\) : bgmVolume/);
+  assert.match(experience, /const duration = bgmDucked \? 700 : 1200/);
+  assert.match(experience, /autoplay && !bgmPreferenceTouched\.current && !bgmEnabled/);
+  assert.match(longPage, /背景音 · 开/);
+  assert.match(longPage, /backgroundMusicLicense\.label/);
+  assert.match(chrome, /BGM×/);
+  assert.match(chrome, /aria-pressed=\{bgmEnabled\}/);
+});
+
 test("the single map resizes with its container across story, free, and tour layouts", async () => {
   const mapHook = await readFile(new URL("../app/hooks/use-minqin-map.ts", import.meta.url), "utf8");
   assert.match(mapHook, /new ResizeObserver\(resizeMap\)/);
@@ -499,7 +526,7 @@ test("museum-documentary UI derives exhibit labels and keeps one persistent cont
   for (const label of ["资料展签", "查看原文", "探索工具", "剩余", "上一页", "下一页"]) assert.match(`${stage}\n${chrome}`, new RegExp(label));
   assert.match(exhibit, /TourPlaybackBar/);
   assert.doesNotMatch(exhibit, /tour-controls exhibit-controls/);
-  assert.match(css, /grid-template-columns: auto auto auto minmax\(120px, 1fr\) auto/);
+  assert.match(css, /grid-template-columns: auto auto auto auto minmax\(120px, 1fr\) auto/);
 });
 
 test("confirmed field labels use white thorn fruit and Hami melon consistently", async () => {

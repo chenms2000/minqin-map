@@ -50,3 +50,28 @@
 - 视频分镜不再使用章节墙钟推进，导览进度直接同步媒体 `currentTime`；移动端缓冲时视频时间不变，进度也随之冻结。
 - 用户暂停/继续导览时同步暂停/恢复实际视频；视频播放结束或媒体错误后才完成该分镜。
 - 未修改任何 `durationSeconds`、章节结构、地图镜头或 `idle / playing / paused / completed` 播放状态。
+
+---
+
+# P13 — 全站舒缓背景音乐与视频优先混音
+
+日期：2026-08-28
+
+## 实现结果
+
+- 下载并本地托管 `Forest Mist Whispers`、`Valley Sunset`、`Rest Now` 三首 Mixkit Free Music，发布副本统一压为约 128 kbps MP3，总计约 9.35 MB。
+- 新增全站单一背景音乐实例与 `bgmEnabled / bgmTrackIndex / bgmVolume` 状态，按 1 → 2 → 3 → 1 固定循环，不依赖运行时第三方音频外链。
+- 首页主导航与自动导览播放栏均可开关 BGM；第一次点击“开始自动导览”时，如用户尚未明确选择背景音偏好，会在该用户手势中启动 BGM。
+- 默认 BGM 音量为 14%；任一站内视频开始播放时约 0.7 秒 duck 到不高于 2%，暂停或结束后约 1.2 秒恢复，因此自动导览和手动视频都以现场原声优先。
+- 用户主动关闭 BGM 后，后续自动导览不会自行重新开启。
+- 页脚记录三首曲目的曲名、作者、Mixkit 来源与 `Mixkit Stock Music Free License` 链接。
+
+## 验证
+
+- 仅运行定向测试：`node --test --test-name-pattern="global background soundtrack" tests/rendered-html.test.mjs`。
+- 结果：1 项通过，0 项失败；未追加 build、lint 或完整测试。
+
+## 边界
+
+- 未加入交叉淡化双播放器；当前曲目结束后直接切换下一首，以保持实现简单稳定。
+- `page.css` 的导航样式定点编辑因同一 `EDIT_CONTEXT_MISMATCH` 指纹连续出现两次而按既定规则停止；导航 BGM 控制改为复用现有 `secondary-action` / `nav-date` 样式，没有继续碰撞该文件。

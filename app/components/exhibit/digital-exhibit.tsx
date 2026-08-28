@@ -33,6 +33,9 @@ type DigitalExhibitProps = {
   resourceSection: ResourceSectionKey;
   resourceView: ResourceView;
   relationshipIndex: number;
+  bgmEnabled: boolean;
+  bgmTrackTitle: string;
+  onToggleBgm: () => void;
   onEnd: () => void;
   onSelectModule: (module: ExhibitModule) => void;
   onGoChapter: (index: number) => void;
@@ -55,7 +58,7 @@ type DigitalExhibitProps = {
 };
 
 export function DigitalExhibit(props: DigitalExhibitProps) {
-  const { panelRef, module, tourIndex, tourFrameIndex, playback, elapsedSeconds, totalSeconds, timelineDay, timelineCategory, timelineIndex, waterStageIndex, resourceIndex, resourceSection, resourceView, relationshipIndex } = props;
+  const { panelRef, module, tourIndex, tourFrameIndex, playback, elapsedSeconds, totalSeconds, timelineDay, timelineCategory, timelineIndex, waterStageIndex, resourceIndex, resourceSection, resourceView, relationshipIndex, bgmEnabled, bgmTrackTitle } = props;
   const touchStartX = useRef<number | null>(null);
   const [toolsOpen, setToolsOpen] = useState(module !== "tour");
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -134,6 +137,6 @@ export function DigitalExhibit(props: DigitalExhibitProps) {
       </div>}
     </div>}
 
-    {module === "tour" ? <TourPlaybackBar playback={playback} soundEnabled={soundEnabled} elapsedSeconds={elapsedSeconds} totalSeconds={totalSeconds} progress={tourProgress} previousDisabled={tourIndex === 0} nextDisabled={tourIndex === tourChapters.length - 1} onToggle={() => { if (playback !== "playing") setToolsOpen(false); props.onTogglePlayback(); }} onToggleSound={() => setSoundEnabled((enabled) => !enabled)} onPrevious={() => props.onStep(-1)} onNext={() => props.onStep(1)} onExploreMap={props.onExploreMap} onViewEvidence={props.onViewEvidence} /> : <ExhibitNavigationBar label={module === "field" ? "实践影像" : module === "water" ? "水沙切片" : "药材关系"} previousDisabled={(module === "field" && timelineIndex === 0) || (module === "water" && waterStageIndex === 0) || (module === "resources" && resourceView === "specimen" && resourceIndex === 0) || (module === "resources" && resourceView === "relations" && relationshipIndex === 0)} nextDisabled={(module === "field" && timelineIndex >= filteredEvents.length - 1) || (module === "water" && waterStageIndex >= waterStages.length - 1) || (module === "resources" && resourceView === "specimen" && resourceIndex >= herbs.length - 1) || (module === "resources" && resourceView === "relations" && relationshipIndex >= relationshipEdges.length - 1)} onPrevious={() => props.onStep(-1)} onNext={() => props.onStep(1)} />}
+    {module === "tour" ? <TourPlaybackBar playback={playback} soundEnabled={soundEnabled} bgmEnabled={bgmEnabled} bgmTrackTitle={bgmTrackTitle} elapsedSeconds={elapsedSeconds} totalSeconds={totalSeconds} progress={tourProgress} previousDisabled={tourIndex === 0} nextDisabled={tourIndex === tourChapters.length - 1} onToggle={() => { if (playback !== "playing") setToolsOpen(false); props.onTogglePlayback(); }} onToggleSound={() => setSoundEnabled((enabled) => !enabled)} onToggleBgm={props.onToggleBgm} onPrevious={() => props.onStep(-1)} onNext={() => props.onStep(1)} onExploreMap={props.onExploreMap} onViewEvidence={props.onViewEvidence} /> : <ExhibitNavigationBar label={module === "field" ? "实践影像" : module === "water" ? "水沙切片" : "药材关系"} previousDisabled={(module === "field" && timelineIndex === 0) || (module === "water" && waterStageIndex === 0) || (module === "resources" && resourceView === "specimen" && resourceIndex === 0) || (module === "resources" && resourceView === "relations" && relationshipIndex === 0)} nextDisabled={(module === "field" && timelineIndex >= filteredEvents.length - 1) || (module === "water" && waterStageIndex >= waterStages.length - 1) || (module === "resources" && resourceView === "specimen" && resourceIndex >= herbs.length - 1) || (module === "resources" && resourceView === "relations" && relationshipIndex >= relationshipEdges.length - 1)} onPrevious={() => props.onStep(-1)} onNext={() => props.onStep(1)} />}
   </aside>;
 }
