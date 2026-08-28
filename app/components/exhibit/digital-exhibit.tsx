@@ -56,6 +56,7 @@ export function DigitalExhibit(props: DigitalExhibitProps) {
   const { panelRef, module, tourIndex, tourFrameIndex, playback, elapsedSeconds, totalSeconds, timelineDay, timelineCategory, timelineIndex, waterStageIndex, resourceIndex, resourceSection, resourceView, relationshipIndex } = props;
   const touchStartX = useRef<number | null>(null);
   const [toolsOpen, setToolsOpen] = useState(module !== "tour");
+  const [soundEnabled, setSoundEnabled] = useState(true);
   const filteredEvents = useMemo(() => timelineEvents.filter((event) => event.day === timelineDay && (timelineCategory === "全部" || event.category === timelineCategory)), [timelineCategory, timelineDay]);
   const chapter = tourChapters[tourIndex];
   const chapterFrames = chapterFramesById.get(chapter.id) ?? [];
@@ -88,7 +89,7 @@ export function DigitalExhibit(props: DigitalExhibitProps) {
     <ExhibitHeader module={module} tourIndex={tourIndex} onEnd={props.onEnd} />
     <ExploreMenu open={toolsOpen} module={module} tourIndex={tourIndex} onOpenChange={setToolsOpen} onSelectModule={(nextModule) => { setToolsOpen(false); props.onSelectModule(nextModule); }} onGoChapter={props.onGoChapter} onRestart={props.onRestart} />
 
-    {module === "tour" && tourFrame && <TourStage chapter={chapter} chapterCount={tourChapters.length} frame={tourFrame} frameIndex={tourFrameIndex} frameCount={chapterFrames.length} media={tourFrameMedia} point={tourFramePoint} source={tourFrameSource} isPlaying={playback === "playing"} />}
+    {module === "tour" && tourFrame && <TourStage chapter={chapter} chapterCount={tourChapters.length} frame={tourFrame} frameIndex={tourFrameIndex} frameCount={chapterFrames.length} media={tourFrameMedia} point={tourFramePoint} source={tourFrameSource} isPlaying={playback === "playing"} soundEnabled={soundEnabled} />}
 
     {module !== "tour" && <div className={`exhibit-stage exhibit-knowledge-stage visual-${module === "resources" ? "specimen" : "data"}`} data-visual-type={module === "resources" ? "specimen" : "data"}>
 
@@ -131,6 +132,6 @@ export function DigitalExhibit(props: DigitalExhibitProps) {
       </div>}
     </div>}
 
-    {module === "tour" ? <TourPlaybackBar playback={playback} elapsedSeconds={elapsedSeconds} totalSeconds={totalSeconds} progress={tourProgress} previousDisabled={tourIndex === 0} nextDisabled={tourIndex === tourChapters.length - 1} onToggle={() => { if (playback !== "playing") setToolsOpen(false); props.onTogglePlayback(); }} onPrevious={() => props.onStep(-1)} onNext={() => props.onStep(1)} onExploreMap={props.onExploreMap} onViewEvidence={props.onViewEvidence} /> : <ExhibitNavigationBar label={module === "field" ? "实践影像" : module === "water" ? "水沙切片" : "药材关系"} previousDisabled={(module === "field" && timelineIndex === 0) || (module === "water" && waterStageIndex === 0) || (module === "resources" && resourceView === "specimen" && resourceIndex === 0) || (module === "resources" && resourceView === "relations" && relationshipIndex === 0)} nextDisabled={(module === "field" && timelineIndex >= filteredEvents.length - 1) || (module === "water" && waterStageIndex >= waterStages.length - 1) || (module === "resources" && resourceView === "specimen" && resourceIndex >= herbs.length - 1) || (module === "resources" && resourceView === "relations" && relationshipIndex >= relationshipEdges.length - 1)} onPrevious={() => props.onStep(-1)} onNext={() => props.onStep(1)} />}
+    {module === "tour" ? <TourPlaybackBar playback={playback} soundEnabled={soundEnabled} elapsedSeconds={elapsedSeconds} totalSeconds={totalSeconds} progress={tourProgress} previousDisabled={tourIndex === 0} nextDisabled={tourIndex === tourChapters.length - 1} onToggle={() => { if (playback !== "playing") setToolsOpen(false); props.onTogglePlayback(); }} onToggleSound={() => setSoundEnabled((enabled) => !enabled)} onPrevious={() => props.onStep(-1)} onNext={() => props.onStep(1)} onExploreMap={props.onExploreMap} onViewEvidence={props.onViewEvidence} /> : <ExhibitNavigationBar label={module === "field" ? "实践影像" : module === "water" ? "水沙切片" : "药材关系"} previousDisabled={(module === "field" && timelineIndex === 0) || (module === "water" && waterStageIndex === 0) || (module === "resources" && resourceView === "specimen" && resourceIndex === 0) || (module === "resources" && resourceView === "relations" && relationshipIndex === 0)} nextDisabled={(module === "field" && timelineIndex >= filteredEvents.length - 1) || (module === "water" && waterStageIndex >= waterStages.length - 1) || (module === "resources" && resourceView === "specimen" && resourceIndex >= herbs.length - 1) || (module === "resources" && resourceView === "relations" && relationshipIndex >= relationshipEdges.length - 1)} onPrevious={() => props.onStep(-1)} onNext={() => props.onStep(1)} />}
   </aside>;
 }

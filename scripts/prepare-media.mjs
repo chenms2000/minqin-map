@@ -62,6 +62,8 @@ const newVideos = [
   ["8.4 浇水维护", "IMG_1097.MOV", "2026-08-04/water-flow.mp4", 7, 14],
 ];
 
+const optionalAacAudioArgs = ["-map", "0:v:0", "-map", "0:a:0?", "-c:a", "aac"];
+
 await mkdir(outputRoot, { recursive: true });
 
 for (const [sourceName, outputName] of photos) {
@@ -103,7 +105,7 @@ for (const [sourceName, outputName, start, duration] of videos) {
     "-hide_banner", "-loglevel", "error", "-ss", String(start), "-i", source,
     "-t", String(duration), "-vf", "scale=960:-2", "-c:v", "libx264",
     "-preset", "medium", "-crf", "29", "-pix_fmt", "yuv420p",
-    "-movflags", "+faststart", "-an", "-y", output,
+    "-movflags", "+faststart", ...optionalAacAudioArgs, "-y", output,
   ], { stdio: "inherit" });
   if (result.status !== 0) throw new Error(`ffmpeg failed for ${sourceName}`);
 }
@@ -117,7 +119,8 @@ for (const [folder, sourceName, outputName, start, duration, videoFilter = "scal
     "-hide_banner", "-loglevel", "error", "-ss", String(start), "-i", source,
     "-t", String(duration), "-vf", videoFilter, "-c:v", "libx264",
     "-preset", "medium", "-crf", "29", "-pix_fmt", "yuv420p",
-    "-movflags", "+faststart", "-map_metadata", "-1", "-an", "-y", output,
+    "-movflags", "+faststart", "-map_metadata", "-1",
+    ...optionalAacAudioArgs, "-y", output,
   ], { stdio: "inherit" });
   if (result.status !== 0) throw new Error(`ffmpeg failed for ${sourceName}`);
 }

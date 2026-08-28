@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { access, readFile, stat } from "node:fs/promises";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
+import ffmpegPath from "ffmpeg-static";
 
 const root = new URL("../", import.meta.url);
 
@@ -415,10 +418,16 @@ test("homepage starts continuous playback and exposes a complete keyboard and ex
   for (const action of ["自由探索地图", "查看资料依据"]) assert.match(exhibit, new RegExp(action));
 });
 
-test("continuous tour rotates map points, media, video and source text as derived frames", async () => {
+test("continuous tour preserves optional现场 sound and rotates derived frames", async () => {
   const evidence = await readFile(new URL("../content/evidence-index.ts", import.meta.url), "utf8");
   const experience = await readFile(new URL("../app/components/experience/experience.tsx", import.meta.url), "utf8");
-  const exhibit = (await Promise.all(["digital-exhibit.tsx", "tour-stage.tsx"].map((name) => readFile(new URL(`../app/components/exhibit/${name}`, import.meta.url), "utf8")))).join("\n");
+  const [digitalExhibit, chrome, stage, prepareMedia] = await Promise.all([
+    readFile(new URL("../app/components/exhibit/digital-exhibit.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/components/exhibit/exhibit-chrome.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/components/exhibit/tour-stage.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../scripts/prepare-media.mjs", import.meta.url), "utf8"),
+  ]);
+  const exhibit = `${digitalExhibit}\n${chrome}\n${stage}`;
   assert.match(evidence, /chapterFramesById/);
   for (const kind of ["intro", "point", "media", "source"]) assert.match(evidence, new RegExp(`kind: "${kind}"`));
   assert.match(evidence, /asset\.type !== "video"/);
@@ -432,8 +441,31 @@ test("continuous tour rotates map points, media, video and source text as derive
   const scenes = await readFile(new URL("../content/exhibit-scenes.ts", import.meta.url), "utf8");
   assert.match(scenes, /id: "field-days"[\s\S]*?zoom: 11\.45/);
   assert.match(exhibit, /autoPlay=\{isPlaying\}/);
-  assert.match(exhibit, /muted playsInline preload/);
+  assert.match(stage, /muted=\{!soundEnabled\} playsInline preload/);
+  assert.doesNotMatch(stage, /\smuted playsInline/);
   assert.doesNotMatch(exhibit, /playsInline loop/);
+  assert.doesNotMatch(stage, /\scontrols(?:\s|>)/);
+  assert.match(digitalExhibit, /useState\(true\)/);
+  assert.match(digitalExhibit, /soundEnabled=\{soundEnabled\}/);
+  assert.match(digitalExhibit, /setSoundEnabled\(\(enabled\) => !enabled\)/);
+  for (const label of ["声音", "静音", "关闭导览声音", "开启导览声音"]) assert.match(chrome, new RegExp(label));
+  assert.match(chrome, /aria-pressed=\{soundEnabled\}/);
+  assert.match(prepareMedia, /"-map", "0:a:0\?"/);
+  assert.match(prepareMedia, /"-c:a", "aac"/);
+  assert.doesNotMatch(prepareMedia, /"-an"/);
+  for (const mediaPath of [
+    "2026-08-03/road-to-minqin.mp4",
+    "2026-08-03/desert-observation.mp4",
+    "2026-08-04/irrigation-arrival.mp4",
+    "2026-08-04/watering-together.mp4",
+    "2026-08-03/fruit-field.mp4",
+    "2026-08-03/heat-science.mp4",
+    "2026-08-03/live-melon.mp4",
+    "2026-08-04/water-flow.mp4",
+  ]) {
+    const probe = spawnSync(ffmpegPath, ["-hide_banner", "-i", fileURLToPath(new URL(`../public/media/${mediaPath}`, import.meta.url))], { encoding: "utf8" });
+    assert.match(probe.stderr, /Audio: aac/, `${mediaPath} should contain a browser-compatible AAC track`);
+  }
   assert.doesNotMatch(exhibit, /见视频下方文字|自动分镜 · AUTO STORYBOARD/);
 });
 
@@ -457,7 +489,7 @@ test("museum-documentary UI derives exhibit labels and keeps one persistent cont
   for (const label of ["资料展签", "查看原文", "探索工具", "剩余", "上一页", "下一页"]) assert.match(`${stage}\n${chrome}`, new RegExp(label));
   assert.match(exhibit, /TourPlaybackBar/);
   assert.doesNotMatch(exhibit, /tour-controls exhibit-controls/);
-  assert.match(css, /grid-template-columns: auto auto minmax\(120px, 1fr\) auto/);
+  assert.match(css, /grid-template-columns: auto auto auto minmax\(120px, 1fr\) auto/);
 });
 
 test("confirmed field labels use white thorn fruit and Hami melon consistently", async () => {

@@ -14,6 +14,7 @@ type TourStageProps = {
   point?: StoryPoint;
   source?: SourceRef;
   isPlaying: boolean;
+  soundEnabled: boolean;
 };
 
 export function deriveExhibitVisualType(frame: TourFrame, media?: MediaAsset): ExhibitVisualType {
@@ -22,14 +23,14 @@ export function deriveExhibitVisualType(frame: TourFrame, media?: MediaAsset): E
   return "data";
 }
 
-export function TourStage({ chapter, chapterCount, frame, frameIndex, frameCount, media, point, source, isPlaying }: TourStageProps) {
+export function TourStage({ chapter, chapterCount, frame, frameIndex, frameCount, media, point, source, isPlaying, soundEnabled }: TourStageProps) {
   const visualType = deriveExhibitVisualType(frame, media);
 
   return <div className={`exhibit-stage module-tour visual-${visualType}`} data-visual-type={visualType}>
     {media && <figure className="tour-media">
       {media.type === "image"
         ? <img key={frame.id} src={media.src} alt={media.alt} />
-        : <video key={frame.id} src={media.src} autoPlay={isPlaying} muted playsInline preload="metadata" aria-label={media.alt}><track kind="captions" src={publicAsset("/media/shared/ambient-zh.vtt")} srcLang="zh" label="中文说明" default /></video>}
+        : <video key={frame.id} src={media.src} autoPlay={isPlaying} muted={!soundEnabled} playsInline preload="metadata" aria-label={media.alt}><track kind="captions" src={publicAsset("/media/shared/ambient-zh.vtt")} srcLang="zh" label="中文说明" default /></video>}
       <figcaption>{media.caption}</figcaption>
     </figure>}
 

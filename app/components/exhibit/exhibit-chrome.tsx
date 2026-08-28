@@ -47,22 +47,25 @@ export function ExploreMenu({ open, module, tourIndex, onOpenChange, onSelectMod
 
 type PlaybackBarProps = {
   playback: TourPlaybackState;
+  soundEnabled: boolean;
   elapsedSeconds: number;
   totalSeconds: number;
   progress: number;
   previousDisabled: boolean;
   nextDisabled: boolean;
   onToggle: () => void;
+  onToggleSound: () => void;
   onPrevious: () => void;
   onNext: () => void;
   onExploreMap: () => void;
   onViewEvidence: () => void;
 };
 
-export function TourPlaybackBar({ playback, elapsedSeconds, totalSeconds, progress, previousDisabled, nextDisabled, onToggle, onPrevious, onNext, onExploreMap, onViewEvidence }: PlaybackBarProps) {
+export function TourPlaybackBar({ playback, soundEnabled, elapsedSeconds, totalSeconds, progress, previousDisabled, nextDisabled, onToggle, onToggleSound, onPrevious, onNext, onExploreMap, onViewEvidence }: PlaybackBarProps) {
   const playLabel = playback === "playing" ? "暂停" : playback === "paused" ? "继续" : playback === "completed" ? "重新播放" : "自动播放";
   return <div className={`tour-playback-bar is-${playback}`} aria-label="导览播放控制">
     <button className="play-toggle" onClick={onToggle}><span aria-hidden="true">{playback === "playing" ? "Ⅱ" : "▶"}</span>{playLabel}</button>
+    <button className="sound-toggle" onClick={onToggleSound} aria-label={soundEnabled ? "关闭导览声音" : "开启导览声音"} aria-pressed={soundEnabled}>{soundEnabled ? "声音" : "静音"}</button>
     <button className="step-button" onClick={onPrevious} disabled={previousDisabled} aria-label="上一页">←<span>上一页</span></button>
     <div className="tour-total-progress" role="progressbar" aria-label="导览总进度" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress}>
       <i><b style={{ width: `${progress}%` }} /></i>
