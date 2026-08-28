@@ -50,7 +50,6 @@ export function Experience() {
   const [tourMode, setTourMode] = useState(false);
   const [tourIndex, setTourIndex] = useState(0);
   const [tourPlayback, setTourPlayback] = useState<TourPlaybackState>("idle");
-  const [tourVideoBuffering, setTourVideoBuffering] = useState(false);
   const [chapterElapsedSeconds, setChapterElapsedSeconds] = useState(0);
   const [storyIndex, setStoryIndex] = useState(0);
   const [storyMapMode, setStoryMapMode] = useState(false);
@@ -86,6 +85,8 @@ export function Experience() {
   const chapterDurationSeconds = chapterDurations[tourIndex] ?? 0;
   const activeTourFrameIndex = tourFrameIndexAt(chapterElapsedSeconds, chapterFrames.map((frame) => frame.durationSeconds));
   const activeTourFrame = chapterFrames[activeTourFrameIndex];
+  const activeTourFrameMedia = mediaById.get(activeTourFrame?.mediaId ?? "");
+  const activeTourFrameStartSeconds = chapterFrames.slice(0, activeTourFrameIndex).reduce((total, frame) => total + frame.durationSeconds, 0);
   const activeTourPoint = storyPointById.get(activeTourFrame?.pointId ?? "");
   const totalTourSeconds = chapterDurations.reduce((total, duration) => total + duration, 0);
   const totalElapsedSeconds = chapterDurations.slice(0, tourIndex).reduce((total, duration) => total + duration, 0) + chapterElapsedSeconds;
@@ -112,7 +113,7 @@ export function Experience() {
   const { mapContainer, mapInstance, mapFallback, mapReady, mapProgress } = useMinqinMap({ activeLayer, activePoints, mapSelectedPointId, presentationMode: mapPresentationMode, historyStage, toolPortals: mapToolPortals, onPointActivate: activateMapPoint, onToolActivate: openMapTool });
 
   useEffect(() => {
-    if (!tourMode || exhibitModule !== "tour" || tourPlayback !== "playing" || tourVideoBuffering) return;
+    if (!tourMode || exhibitModule !== "tour" || tourPlayback !== "playing" || activeTourFrameMedia?.type === "video") return;
     const durationSeconds = chapterDurationSeconds;
     const startedAt = Date.now();
     const elapsedAtStart = chapterElapsedRef.current;
@@ -133,9 +134,9 @@ export function Experience() {
       goToChapter(tourIndex + 1);
     }, remainingDurationMs);
     return () => { window.clearInterval(progressTimer); window.clearTimeout(timer); };
-    // goToChapter intentionally resets the single chapter timer through tourIndex.
+    // Each frame restarts the wall clock from chapterElapsedRef; video frames use media currentTime instead.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chapterDurationSeconds, exhibitModule, tourIndex, tourMode, tourPlayback, tourVideoBuffering]);
+  }, [activeTourFrame?.id, activeTourFrameMedia?.type, chapterDurationSeconds, exhibitModule, tourIndex, tourMode, tourPlayback]);
 
   useEffect(() => {
     const openFromUrl = () => {
@@ -271,7 +272,24 @@ export function Experience() {
   function resetChapterProgress() {
     chapterElapsedRef.current = 0;
     setChapterElapsedSeconds(0);
-    setTourVideoBuffering(false);
+  }
+
+  function syncTourVideoProgress(currentTimeSeconds: number) {
+    if (!activeTourFrame || activeTourFrameMedia?.type !== "video") return;
+    const frameEndSeconds = activeTourFrameStartSeconds + activeTourFrame.durationSeconds;
+    const elapsedSeconds = Math.min(frameEndSeconds, activeTourFrameStartSeconds + Math.max(0, currentTimeSeconds));
+    chapterElapsedRef.current = elapsedSeconds;
+    setChapterElapsedSeconds(elapsedSeconds);
+  }
+
+  function completeTourVideo() {
+    if (!activeTourFrame || activeTourFrameMedia?.type !== "video") return;
+    const elapsedSeconds = Math.min(chapterDurationSeconds, activeTourFrameStartSeconds + activeTourFrame.durationSeconds);
+    chapterElapsedRef.current = elapsedSeconds;
+    setChapterElapsedSeconds(elapsedSeconds);
+    if (elapsedSeconds < chapterDurationSeconds) return;
+    if (tourIndex === tourChapters.length - 1) setTourPlayback("completed");
+    else goToChapter(tourIndex + 1);
   }
 
   function startTour(initialIndex = 0, autoplay = false) {
@@ -408,6 +426,6 @@ export function Experience() {
 
   return <main className={[tourMode ? "tour-mode" : "", storyMapMode && !tourMode ? "story-map-mode" : ""].filter(Boolean).join(" ")}>
     <LongFormPage mapSlot={mapSlot} showAllMedia={showAllMedia} onToggleMedia={() => setShowAllMedia((value) => !value)} onStartExhibit={startTour} storyIndex={storyIndex} storyTargetId={storyTargetId} onStoryChapterChange={handleStoryChapterChange} onStoryMapModeChange={handleStoryMapModeChange} onStoryTargetHandled={handleStoryTargetHandled} />
-    {tourMode && <DigitalExhibit panelRef={tourPanel} module={exhibitModule} tourIndex={tourIndex} tourFrameIndex={activeTourFrameIndex} playback={tourPlayback} elapsedSeconds={totalElapsedSeconds} totalSeconds={totalTourSeconds} timelineDay={timelineDay} timelineCategory={timelineCategory} timelineIndex={timelineIndex} waterStageIndex={waterStageIndex} resourceIndex={resourceIndex} resourceSection={resourceSection} resourceView={resourceView} relationshipIndex={relationshipIndex} onEnd={endTour} onSelectModule={selectExhibitModule} onGoChapter={goToChapter} onTogglePlayback={toggleTourPlayback} onTourVideoBufferingChange={setTourVideoBuffering} onExploreMap={() => leaveTourFor("map")} onViewEvidence={() => leaveTourFor("sources")} onSetTimelineDay={(day) => { setTimelineDay(day); setTimelineCategory("全部"); setTimelineIndex(0); }} onSetTimelineCategory={(category) => { setTimelineCategory(category); setTimelineIndex(0); }} onSelectTimelineEvent={selectTimelineEvent} onSelectWaterStage={selectWaterStage} onSelectResource={selectResource} onSetResourceSection={setResourceSection} onSetResourceView={setResourceView} onSetRelationshipIndex={setRelationshipIndex} onActivateRelationshipPoint={activateRelationshipPoint} onStep={stepExhibit} onRestart={() => { const shouldResume = tourPlayback === "playing"; resetChapterProgress(); setTourIndex(0); setTourPlayback(shouldResume ? "playing" : "idle"); setTimelineIndex(0); setWaterStageIndex(0); setResourceIndex(0); setRelationshipIndex(0); setExhibitModule("tour"); setActiveLayer(tourChapters[0].layer); setSelectedId(null); updateExhibitUrl("tour", 0, true); }} />}
+    {tourMode && <DigitalExhibit panelRef={tourPanel} module={exhibitModule} tourIndex={tourIndex} tourFrameIndex={activeTourFrameIndex} playback={tourPlayback} elapsedSeconds={totalElapsedSeconds} totalSeconds={totalTourSeconds} timelineDay={timelineDay} timelineCategory={timelineCategory} timelineIndex={timelineIndex} waterStageIndex={waterStageIndex} resourceIndex={resourceIndex} resourceSection={resourceSection} resourceView={resourceView} relationshipIndex={relationshipIndex} onEnd={endTour} onSelectModule={selectExhibitModule} onGoChapter={goToChapter} onTogglePlayback={toggleTourPlayback} onTourVideoTimeUpdate={syncTourVideoProgress} onTourVideoEnded={completeTourVideo} onExploreMap={() => leaveTourFor("map")} onViewEvidence={() => leaveTourFor("sources")} onSetTimelineDay={(day) => { setTimelineDay(day); setTimelineCategory("全部"); setTimelineIndex(0); }} onSetTimelineCategory={(category) => { setTimelineCategory(category); setTimelineIndex(0); }} onSelectTimelineEvent={selectTimelineEvent} onSelectWaterStage={selectWaterStage} onSelectResource={selectResource} onSetResourceSection={setResourceSection} onSetResourceView={setResourceView} onSetRelationshipIndex={setRelationshipIndex} onActivateRelationshipPoint={activateRelationshipPoint} onStep={stepExhibit} onRestart={() => { const shouldResume = tourPlayback === "playing"; resetChapterProgress(); setTourIndex(0); setTourPlayback(shouldResume ? "playing" : "idle"); setTimelineIndex(0); setWaterStageIndex(0); setResourceIndex(0); setRelationshipIndex(0); setExhibitModule("tour"); setActiveLayer(tourChapters[0].layer); setSelectedId(null); updateExhibitUrl("tour", 0, true); }} />}
   </main>;
 }
