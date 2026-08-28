@@ -92,7 +92,7 @@
 ## 已知风险
 
 - P8 主 surface 外围扩展仍被真实数据读取阻塞；脚本保持 fail-closed，未用纯米色、拉伸或 AI 纹理填补缺口。当前 P7 30m surface 仍为旧的 0.05° buffer，整体边界 seam Gate 未关闭；本轮只关闭了 10m focus overlay 的矩形硬边。
-- `public/` 中新增约 17.9 MiB terrain 与 20.4 MiB surface PMTiles；单文件仍低于常见 Git 托管限制。Surface 使用 Range 按需读取，terrain 仍沿用 P6 整包增强加载。
+- `public/` 中现有约 34.5 MiB terrain 与 20.4 MiB surface PMTiles；单文件仍低于常见 Git 托管限制。Surface 与 terrain 均使用 Range 按当前视野读取，避免首次进入地图时完整下载 terrain archive。
 - `docs/CONTEXT_POLICY.md`、`docs/HANDOFF.md` 与既有 `package-lock.json` 工作树状态不属于本次 Pages 迁移，必须保持未修改、未纳入。
 - GPS 采样线来自影像元数据，只反映部分拍摄点；不得解释为完整路线、基地边界或导航坐标。
 - 白刺果名称已确认；直播展示农产品已确认为哈密瓜。

@@ -5,7 +5,7 @@ import { AttributionControl, Map as MapLibreMap, Marker, NavigationControl, Popu
 import { FileSource, PMTiles, Protocol, TileType } from "pmtiles";
 import { fieldTracks, publicAsset, storyPointById, type StoryLayer, type StoryPoint, type WaterStage } from "@/content";
 import { accuracyClass } from "@/app/lib/formatters";
-import { cartographicPalette, cartographicTuning, contextLabels, defaultView, hillshadeInsertionBeforeId, historyContextLabels, localArchiveName, localArchivePath, localMapStyle, localSurfaceArchivePath, localSurfaceFocusArchivePath, localTerrainArchiveName, localTerrainArchivePath, mapBounds, practiceRoute, surfaceAttribution, surfaceFocusAttribution, surfaceFocusLayerId, surfaceFocusRasterPaint, surfaceFocusSourceId, surfaceInsertionBeforeId, surfaceLayerId, surfaceRasterPaint, surfaceSourceId, terrainAttribution, terrainHillshadeLayerId, terrainHillshadePaint, terrainSourceId, waterRoute, zoomExpression, type MapPresentationMode } from "@/app/lib/map-config";
+import { cartographicPalette, cartographicTuning, contextLabels, defaultView, hillshadeInsertionBeforeId, historyContextLabels, localArchiveName, localArchivePath, localMapStyle, localSurfaceArchivePath, localSurfaceFocusArchivePath, localTerrainArchivePath, mapBounds, practiceRoute, surfaceAttribution, surfaceFocusAttribution, surfaceFocusLayerId, surfaceFocusRasterPaint, surfaceFocusSourceId, surfaceInsertionBeforeId, surfaceLayerId, surfaceRasterPaint, surfaceSourceId, terrainAttribution, terrainHillshadeLayerId, terrainHillshadePaint, terrainSourceId, waterRoute, zoomExpression, type MapPresentationMode } from "@/app/lib/map-config";
 
 type UseMinqinMapOptions = {
   activeLayer: StoryLayer;
@@ -139,18 +139,15 @@ export function useMinqinMap({ activeLayer, activePoints, mapSelectedPointId, pr
         const terrainPath = new URLSearchParams(window.location.search).get("terrain") === "missing"
           ? publicAsset("/maps/__missing-minqin-terrain.pmtiles")
           : localTerrainArchivePath;
-        const response = await fetch(terrainPath, { cache: "force-cache", signal: abortController.signal });
-        if (!response.ok) throw new Error(`Terrain PMTiles request failed: ${response.status}`);
-        const archiveBlob = await response.blob();
-        if (archiveBlob.size < 1024) throw new Error("Terrain PMTiles archive is incomplete");
-        const terrainArchive = new PMTiles(new FileSource(new File([archiveBlob], localTerrainArchiveName, { type: "application/octet-stream" })));
+        const terrainUrl = new URL(terrainPath, window.location.href).href;
+        const terrainArchive = new PMTiles(terrainUrl);
         const header = await terrainArchive.getHeader();
         if (header.tileType !== TileType.Png) throw new Error("Terrain PMTiles archive must contain PNG DEM tiles");
         if (disposed) return;
         protocol.add(terrainArchive);
         activeMap.addSource(terrainSourceId, {
           type: "raster-dem",
-          url: `pmtiles://${localTerrainArchiveName}`,
+          url: `pmtiles://${terrainUrl}`,
           attribution: terrainAttribution,
           encoding: "terrarium",
           tileSize: cartographicTuning.terrain.tileSize,
