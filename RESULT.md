@@ -44,3 +44,9 @@
 ## 定向验证
 
 - 仅运行 P12 对应的 `continuous tour preserves optional现场 sound and rotates derived frames` 定向测试；覆盖声音状态传递、按钮语义、可选 AAC 编码策略及全部发布 MP4（包括 `live-melon.mp4`）的实际 AAC 音轨。
+
+## 视频缓冲计时修复
+
+- 自动导览不再只按墙钟推进：视频触发加载、等待或停滞时暂停章节计时，恢复实际播放后从原进度继续。
+- 切帧、跳章、退出及媒体错误会清除缓冲状态，避免后续图片或文字分镜被误暂停。
+- 未修改任何 `durationSeconds`、章节结构、地图镜头或 `idle / playing / paused / completed` 播放状态。

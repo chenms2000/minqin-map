@@ -2,6 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 
+import { useEffect } from "react";
 import { publicAsset, type ExhibitVisualType, type MediaAsset, type SourceRef, type StoryPoint, type TourChapter, type TourFrame } from "@/content";
 
 type TourStageProps = {
@@ -15,6 +16,7 @@ type TourStageProps = {
   source?: SourceRef;
   isPlaying: boolean;
   soundEnabled: boolean;
+  onVideoBufferingChange: (buffering: boolean) => void;
 };
 
 export function deriveExhibitVisualType(frame: TourFrame, media?: MediaAsset): ExhibitVisualType {
@@ -23,14 +25,15 @@ export function deriveExhibitVisualType(frame: TourFrame, media?: MediaAsset): E
   return "data";
 }
 
-export function TourStage({ chapter, chapterCount, frame, frameIndex, frameCount, media, point, source, isPlaying, soundEnabled }: TourStageProps) {
+export function TourStage({ chapter, chapterCount, frame, frameIndex, frameCount, media, point, source, isPlaying, soundEnabled, onVideoBufferingChange }: TourStageProps) {
   const visualType = deriveExhibitVisualType(frame, media);
+  useEffect(() => () => onVideoBufferingChange(false), [frame.id, onVideoBufferingChange]);
 
   return <div className={`exhibit-stage module-tour visual-${visualType}`} data-visual-type={visualType}>
     {media && <figure className="tour-media">
       {media.type === "image"
         ? <img key={frame.id} src={media.src} alt={media.alt} />
-        : <video key={frame.id} src={media.src} autoPlay={isPlaying} muted={!soundEnabled} playsInline preload="metadata" aria-label={media.alt}><track kind="captions" src={publicAsset("/media/shared/ambient-zh.vtt")} srcLang="zh" label="中文说明" default /></video>}
+        : <video key={frame.id} src={media.src} autoPlay={isPlaying} muted={!soundEnabled} playsInline preload="metadata" aria-label={media.alt} onLoadStart={() => { if (isPlaying) onVideoBufferingChange(true); }} onWaiting={() => onVideoBufferingChange(true)} onStalled={() => onVideoBufferingChange(true)} onPlaying={() => onVideoBufferingChange(false)} onTimeUpdate={() => onVideoBufferingChange(false)} onEnded={() => onVideoBufferingChange(false)} onError={() => onVideoBufferingChange(false)}><track kind="captions" src={publicAsset("/media/shared/ambient-zh.vtt")} srcLang="zh" label="中文说明" default /></video>}
       <figcaption>{media.caption}</figcaption>
     </figure>}
 

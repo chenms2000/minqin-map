@@ -37,6 +37,7 @@ type DigitalExhibitProps = {
   onSelectModule: (module: ExhibitModule) => void;
   onGoChapter: (index: number) => void;
   onTogglePlayback: () => void;
+  onTourVideoBufferingChange: (buffering: boolean) => void;
   onExploreMap: () => void;
   onViewEvidence: () => void;
   onSetTimelineDay: (day: TimelineDay) => void;
@@ -89,7 +90,7 @@ export function DigitalExhibit(props: DigitalExhibitProps) {
     <ExhibitHeader module={module} tourIndex={tourIndex} onEnd={props.onEnd} />
     <ExploreMenu open={toolsOpen} module={module} tourIndex={tourIndex} onOpenChange={setToolsOpen} onSelectModule={(nextModule) => { setToolsOpen(false); props.onSelectModule(nextModule); }} onGoChapter={props.onGoChapter} onRestart={props.onRestart} />
 
-    {module === "tour" && tourFrame && <TourStage chapter={chapter} chapterCount={tourChapters.length} frame={tourFrame} frameIndex={tourFrameIndex} frameCount={chapterFrames.length} media={tourFrameMedia} point={tourFramePoint} source={tourFrameSource} isPlaying={playback === "playing"} soundEnabled={soundEnabled} />}
+    {module === "tour" && tourFrame && <TourStage chapter={chapter} chapterCount={tourChapters.length} frame={tourFrame} frameIndex={tourFrameIndex} frameCount={chapterFrames.length} media={tourFrameMedia} point={tourFramePoint} source={tourFrameSource} isPlaying={playback === "playing"} soundEnabled={soundEnabled} onVideoBufferingChange={props.onTourVideoBufferingChange} />}
 
     {module !== "tour" && <div className={`exhibit-stage exhibit-knowledge-stage visual-${module === "resources" ? "specimen" : "data"}`} data-visual-type={module === "resources" ? "specimen" : "data"}>
 

@@ -435,6 +435,10 @@ test("continuous tour preserves optional现场 sound and rotates derived frames"
   assert.match(evidence, /claimTourMedia/);
   assert.match(experience, /cameraForTourFrame/);
   assert.match(experience, /lastTourCameraKeyRef/);
+  assert.match(experience, /const \[tourVideoBuffering, setTourVideoBuffering\] = useState\(false\)/);
+  assert.match(experience, /tourPlayback !== "playing" \|\| tourVideoBuffering/);
+  assert.match(experience, /tourPlayback, tourVideoBuffering\]/);
+  assert.match(experience, /onTourVideoBufferingChange=\{setTourVideoBuffering\}/);
   assert.match(experience, /frame\?\.kind === "intro"/);
   assert.match(experience, /chapter:\$\{chapter\.id\}/);
   assert.match(experience, /point:\$\{point\.id\}/);
@@ -442,6 +446,8 @@ test("continuous tour preserves optional现场 sound and rotates derived frames"
   assert.match(scenes, /id: "field-days"[\s\S]*?zoom: 11\.45/);
   assert.match(exhibit, /autoPlay=\{isPlaying\}/);
   assert.match(stage, /muted=\{!soundEnabled\} playsInline preload/);
+  for (const event of ["onLoadStart", "onWaiting", "onStalled", "onPlaying", "onTimeUpdate", "onEnded", "onError"]) assert.match(stage, new RegExp(event));
+  assert.match(stage, /onVideoBufferingChange\(false\).*\[frame\.id, onVideoBufferingChange\]/s);
   assert.doesNotMatch(stage, /\smuted playsInline/);
   assert.doesNotMatch(exhibit, /playsInline loop/);
   assert.doesNotMatch(stage, /\scontrols(?:\s|>)/);
